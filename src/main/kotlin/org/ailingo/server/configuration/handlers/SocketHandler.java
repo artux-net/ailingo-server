@@ -3,11 +3,11 @@ package org.ailingo.server.configuration.handlers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import net.artux.pdanetwork.entity.communication.MessageEntity;
-import net.artux.pdanetwork.entity.user.UserEntity;
-import net.artux.pdanetwork.models.communication.ChatUpdate;
-import net.artux.pdanetwork.models.communication.MessageMapper;
-import net.artux.pdanetwork.service.user.UserService;
+import org.ailingo.server.entity.user.UserEntity;
+import org.ailingo.server.model.ChatUpdate;
+import org.ailingo.server.model.MessageDTO;
+import org.ailingo.server.model.UserMapper;
+import org.ailingo.server.user.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.CloseStatus;
@@ -20,10 +20,7 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -31,10 +28,10 @@ public abstract class SocketHandler implements WebSocketHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SocketHandler.class);
 
-    private final UserService userService;
     private final HashMap<UUID, WebSocketSession> sessionMap = new HashMap<>();
     private final ObjectMapper objectMapper;
-    protected final MessageMapper messageMapper;
+    private final UserService userService;
+    private final UserMapper userMapper;
 
     private static final String USER = "user";
 
@@ -136,7 +133,7 @@ public abstract class SocketHandler implements WebSocketHandler {
             return ChatUpdate.empty();
         else {
             logger.debug("{}: Creating chat-update \"{}\" from {}", this.getClass().getSimpleName(), textMessage, getMember(userSession).getLogin());
-            return ChatUpdate.of(messageMapper.dto(new MessageEntity(getMember(userSession), textMessage)));
+            return ChatUpdate.of(new MessageDTO(userMapper.dto(getMember(userSession)), textMessage));
         }
     }
 

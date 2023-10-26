@@ -1,41 +1,25 @@
 package org.ailingo.server.configuration.handlers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.artux.pdanetwork.entity.user.UserEntity;
-import net.artux.pdanetwork.models.communication.ChatEvent;
-import net.artux.pdanetwork.models.communication.ChatStatistic;
-import net.artux.pdanetwork.models.communication.ChatUpdate;
-import net.artux.pdanetwork.models.communication.LimitedLinkedList;
-import net.artux.pdanetwork.models.communication.MessageDTO;
-import net.artux.pdanetwork.models.communication.MessageMapper;
-import net.artux.pdanetwork.models.user.UserMapper;
-import net.artux.pdanetwork.models.user.ban.BanDto;
-import net.artux.pdanetwork.service.user.UserService;
-import net.artux.pdanetwork.service.user.ban.BanService;
-import net.artux.pdanetwork.service.util.ValuesService;
+import org.ailingo.server.entity.user.UserEntity;
+import org.ailingo.server.model.ChatUpdate;
+import org.ailingo.server.model.MessageDTO;
+import org.ailingo.server.model.UserMapper;
+import org.ailingo.server.user.UserService;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedList;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 public abstract class CommonHandler extends SocketHandler {
 
     private final static ChatUpdate EMPTY_UPDATE = ChatUpdate.empty();
 
-    private final LimitedLinkedList<MessageDTO> lastMessages;
-    private final ValuesService valuesService;
-    private final UserMapper userMapper;
+    private final LinkedList<MessageDTO> lastMessages;
 
-    public CommonHandler(UserService userService, ObjectMapper objectMapper, MessageMapper messageMapper, ValuesService valuesService, BanService banService, UserMapper userMapper) {
-        super(userService, objectMapper, messageMapper);
-        this.valuesService = valuesService;
-        this.banService = banService;
-        this.userMapper = userMapper;
+    public CommonHandler(UserService userService, ObjectMapper objectMapper, UserMapper userMapper) {
+        super(objectMapper, userService, userMapper);
 
         lastMessages = new LinkedList<>();
     }
@@ -47,8 +31,6 @@ public abstract class CommonHandler extends SocketHandler {
 
         ChatUpdate initialUpdate = ChatUpdate.of(lastMessages);
 
-        if (banService.isBanned(getMember(userSession).getId()))
-            initialUpdate.addEvent(ChatEvent.of("Отправка сообщений временно заблокирована."));
         sendUpdate(userSession, initialUpdate);
     }
 
@@ -63,23 +45,7 @@ public abstract class CommonHandler extends SocketHandler {
         }
 
         if (!message.isBlank()) {
-            ChatUpdate update;
-            if (banService.isBanned(author.getId())) {
-                BanDto ban = banService.getCurrentBan(author.getId());
-                Instant endTime = ban.getTimestamp().plusSeconds(ban.getSeconds());
-                update = ChatUpdate.event("Заблокирована отправка сообщений. Причина: "
-                        + ban.getReason() + ", осталось времени: " + ChronoUnit.SECONDS.between(Instant.now(), endTime) + " сек.");
-                sendUpdate(userSession, update);
-                return;
-            }
-
-            if (BadWordsFilter.contains(message)) {
-                sendSystemMessage(userSession, "Мат в общих чатах запрещен. На вас наложен временный бан.");
-                banService.applySystemBan(author.getId(), "Автоматический бан за использование плохих слов.", message, 60 * 15);
-                update = ChatUpdate.event(author.getName() + " " + author.getNickname() + " временно заблокирован за нарушение правил.");
-            } else
-                update = getUpdate(userSession, message);
-
+            ChatUpdate update = getUpdate(userSession, message);
             applyUpdate(update);
         } else {
             sendUpdate(userSession, EMPTY_UPDATE);
@@ -91,33 +57,5 @@ public abstract class CommonHandler extends SocketHandler {
             sendUpdate(session, update);
         }
         lastMessages.addAll(update.asOld().getUpdates());
-    }
-
-    public ChatUpdate deleteMessage(UUID messageId) {
-        MessageDTO message = getDeletedMessage(messageId);
-        if (message != null) {
-            ChatUpdate update = ChatUpdate.of(message);
-            for (WebSocketSession session : getSessions()) {
-                sendUpdate(session, update);
-            }
-            return update;
-        } else return EMPTY_UPDATE;
-    }
-
-    protected MessageDTO getDeletedMessage(UUID messageId) {
-        MessageDTO[] messages = new MessageDTO[1];
-        lastMessages.removeIf(messageDTO -> {
-            if (messageDTO.getId().equals(messageId)) {
-                messages[0] = messageDTO;
-                messages[0].setType(MessageDTO.Type.DELETE);
-                return true;
-            }
-            return false;
-        });
-        return messages[0];
-    }
-
-    public ChatStatistic getStatistic() {
-        return new ChatStatistic(userMapper.info(getActiveUsers()), banService.getCurrentBans());
     }
 }

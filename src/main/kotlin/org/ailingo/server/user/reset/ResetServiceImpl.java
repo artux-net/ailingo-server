@@ -1,23 +1,24 @@
 package org.ailingo.server.user.reset;
 
 import lombok.RequiredArgsConstructor;
-import net.artux.pdanetwork.controller.web.user.PasswordController;
-import net.artux.pdanetwork.entity.user.UserEntity;
-import net.artux.pdanetwork.models.Status;
-import net.artux.pdanetwork.models.story.StoryMapper;
-import net.artux.pdanetwork.models.user.dto.StoryData;
-import net.artux.pdanetwork.repository.user.UserRepository;
-import net.artux.pdanetwork.service.email.EmailService;
-import net.artux.pdanetwork.service.user.UserService;
-import net.artux.pdanetwork.service.util.ValuesService;
-import net.artux.pdanetwork.utills.RandomString;
+import org.ailingo.server.controller.PasswordController;
+import org.ailingo.server.entity.user.UserEntity;
+import org.ailingo.server.model.Status;
+import org.ailingo.server.service.EmailService;
+import org.ailingo.server.service.ValuesService;
+import org.ailingo.server.user.UserRepository;
+import org.ailingo.server.user.UserService;
+import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,6 @@ public class ResetServiceImpl implements ResetService {
     private final UserService userService;
     private final EmailService emailService;
     private final UserRepository userRepository;
-    private final StoryMapper storyMapper;
     private final ValuesService valuesService;
     private final Logger logger = LoggerFactory.getLogger(ResetServiceImpl.class);
     private final RandomString randomString = new RandomString();
@@ -92,15 +92,6 @@ public class ResetServiceImpl implements ResetService {
         logger.info("Хэш нового пароля: {}", userEntity.getPassword());
 
         return new Status(true, "Пароль успешно изменен");
-    }
-
-    @Override
-    @Transactional
-    public StoryData resetData() {
-        UserEntity userEntity = userService.getUserById();
-        userEntity.reset();
-        userEntity.getStoryStates().clear();
-        return storyMapper.storyData(userRepository.saveAndFlush(userEntity));
     }
 
     @Override

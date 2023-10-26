@@ -1,69 +1,40 @@
-package org.ailingo.server.controller;
+package org.ailingo.server.controller
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import net.artux.pdanetwork.models.Status;
-import net.artux.pdanetwork.models.user.CommandBlock;
-import net.artux.pdanetwork.models.user.dto.RegisterUserDto;
-import net.artux.pdanetwork.models.user.dto.StoryData;
-import net.artux.pdanetwork.models.user.dto.UserDto;
-import org.ailingo.server.user.UserService;
-import org.ailingo.server.user.reset.ResetService;
-import org.springframework.web.bind.annotation.*;
-
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import lombok.RequiredArgsConstructor
+import org.ailingo.server.model.RegisterUserDto
+import org.ailingo.server.model.Status
+import org.ailingo.server.model.UserDto
+import org.ailingo.server.user.UserService
+import org.ailingo.server.user.reset.ResetService
+import org.springframework.web.bind.annotation.*
 
 @Tag(name = "Пользователь")
+@CrossOrigin
 @RequiredArgsConstructor
 @RestController
-@CrossOrigin
 @RequestMapping("/api/v1/user")
-public class UserController {
-
-    private final UserService userService;
-    private final ResetService resetService;
+class UserController(
+    private val userService: UserService,
+    private val resetService: ResetService
+) {
 
     @Operation(summary = "Регистрация")
     @PostMapping("/register")
-    public Status registerUser(@RequestBody RegisterUserDto registerUser) {
-        return userService.registerUser(registerUser);
+    fun registerUser(@RequestBody registerUser: RegisterUserDto?): Status {
+        return userService.registerUser(registerUser)
     }
 
     @Operation(summary = "Основная информация")
     @GetMapping("/info")
-    public UserDto loginUser() {
-        return userService.getUserDto();
-    }
-
-    @Operation(summary = "Редактирование основной информации")
-    @PutMapping("/edit")
-    public Status editUser(@Valid @RequestBody RegisterUserDto user) {
-        return userService.editUser(user);
+    fun loginUser(): UserDto {
+        return userService.getUserDto()
     }
 
     @PutMapping("/reset/pass")
     @Operation(summary = "Запрос на сброс пароля")
-    public Status sendResetPasswordLetter(@RequestParam("email") String email) {
-        return resetService.sendResetPasswordLetter(email);
+    fun sendResetPasswordLetter(@RequestParam("email") email: String?): Status {
+        return resetService.sendResetPasswordLetter(email)
     }
-
-    @Operation(summary = "Выполнение действий")
-    @PutMapping("/commands")
-    public StoryData applyCommands(@RequestBody CommandBlock block) {
-        return actionService.applyCommands(block.getActions());
-    }
-
-    @Operation(summary = "Информация о прохождении")
-    @GetMapping("/quest/info")
-    public StoryData getCurrentStoryData() {
-        return actionService.applyCommands(null);
-    }
-
-    @GetMapping("/quest/reset")
-    @Operation(summary = "Сброс информации о прохождении")
-    public StoryData resetData() {
-        return resetService.resetData();
-    }
-
 }

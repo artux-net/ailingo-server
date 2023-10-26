@@ -1,9 +1,8 @@
 package org.ailingo.server.user;
 
 import lombok.RequiredArgsConstructor;
-import net.artux.pdanetwork.entity.user.SimpleUser;
-import net.artux.pdanetwork.models.security.SecurityUser;
 import org.ailingo.server.entity.user.SimpleUser;
+import org.ailingo.server.model.SecurityUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -42,7 +41,6 @@ public class UserDetailService implements UserDetailsService {
             UserDetails userDetails = User.builder()
                     .username(simpleUser.getLogin())
                     .password(simpleUser.getPassword())
-                    .authorities("ROLE_" + simpleUser.getRole().name())
                     .build();
             return new SecurityUser(simpleUser.getId(), userDetails);
         } else {

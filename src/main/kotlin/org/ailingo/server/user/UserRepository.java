@@ -1,17 +1,18 @@
 package org.ailingo.server.user;
 
-import net.artux.pdanetwork.entity.user.SimpleUser;
-import net.artux.pdanetwork.entity.user.UserEntity;
 import org.ailingo.server.entity.user.SimpleUser;
 import org.ailingo.server.entity.user.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @Transactional
 public interface UserRepository extends JpaRepository<UserEntity, UUID> {

@@ -1,25 +1,16 @@
 package org.ailingo.server.user;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import net.artux.pdanetwork.entity.user.UserEntity;
-import net.artux.pdanetwork.models.Status;
-import net.artux.pdanetwork.models.security.SecurityUser;
-import net.artux.pdanetwork.models.user.UserMapper;
-import net.artux.pdanetwork.models.user.dto.AdminEditUserDto;
-import net.artux.pdanetwork.models.user.dto.AdminUserDto;
-import net.artux.pdanetwork.models.user.dto.RegisterUserDto;
-import net.artux.pdanetwork.models.user.dto.UserDto;
-import net.artux.pdanetwork.models.user.enums.Role;
-import net.artux.pdanetwork.service.email.EmailService;
-import net.artux.pdanetwork.service.util.ValuesService;
-import net.artux.pdanetwork.utills.RandomString;
-import net.artux.pdanetwork.utills.security.AdminAccess;
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.ailingo.server.entity.user.UserEntity;
+import org.ailingo.server.model.RegisterUserDto;
+import org.ailingo.server.model.SecurityUser;
+import org.ailingo.server.model.Status;
+import org.ailingo.server.model.UserDto;
+import org.ailingo.server.model.UserMapper;
+import org.ailingo.server.service.EmailService;
+import org.ailingo.server.service.ValuesService;
+import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -28,10 +19,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -45,12 +41,19 @@ public class UserServiceImpl implements UserService {
     private final ValuesService valuesService;
     private final UserValidator userValidator;
     private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
 
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
     private final Environment environment;
+    private final UserMapper mapper;
     private final RandomString randomString = new RandomString();
+
+    @PostConstruct
+    public void init() {
+        if (userRepository.count() == 0) {
+            saveUser(new RegisterUserDto("admin", "pass", "test@test.com", "admin", ""));
+        }
+    }
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
@@ -99,13 +102,12 @@ public class UserServiceImpl implements UserService {
             if (!currentStatus.isSuccess())
                 return currentStatus;
 
-            UserEntity member = saveUser(regDto, Role.USER);
-            long pdaId = member.getPdaId();
-            logger.info("Пользователь {} ({} {}) зарегистрирован.", member.getLogin(), member.getName(), member.getNickname());
+            UserEntity member = saveUser(regDto);
+            logger.info("Пользователь {} ({}) зарегистрирован.", member.getLogin(), member.getName());
             try {
                 if (valuesService.isEmailConfirmationEnabled())
-                    emailService.sendRegisterLetter(regDto, pdaId);
-                return new Status(true, pdaId + " - Это ваш pdaId, мы вас зарегистрировали, спасибо!");
+                    emailService.sendRegisterLetter(regDto);
+                return new Status(true, "Мы вас зарегистрировали, спасибо!");
             } catch (Exception e) {
                 logger.error("Handle confirmation", e);
                 return new Status(true, "Не получилось отправить подтверждение на почту, но мы вас зарегистрировали, спасибо!");
@@ -113,8 +115,8 @@ public class UserServiceImpl implements UserService {
         } else return new Status(false, "Ссылка устарела или не существует");
     }
 
-    public UserEntity saveUser(RegisterUserDto registerUserDto, Role role) {
-        return userRepository.save(new UserEntity(registerUserDto, passwordEncoder, role));
+    public UserEntity saveUser(RegisterUserDto registerUserDto) {
+        return userRepository.save(new UserEntity(registerUserDto, passwordEncoder));
     }
 
     @Override
@@ -138,17 +140,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserDto() {
-        return userMapper.dto(getUserById());
+        return mapper.dto(getUserById());
     }
 
     @Override
     public UserEntity getUserById(UUID objectId) {
         return userRepository.findById(objectId).orElseThrow();
-    }
-
-    @Override
-    public AdminUserDto getUserForAdminById(UUID objectId) {
-        return userMapper.adminDto(getUserById(objectId));
     }
 
     @Override
@@ -167,55 +164,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @AdminAccess
-    public AdminUserDto updateUser(UUID id, AdminEditUserDto adminEditUserDto) {
-        UserEntity user = getUserById(id);
-        user.setName(adminEditUserDto.getName());
-        user.setNickname(adminEditUserDto.getNickname());
-        user.setLogin(adminEditUserDto.getLogin());
-        user.setEmail(adminEditUserDto.getEmail());
-        user.setAvatar(adminEditUserDto.getAvatar());
-
-        user.setRole(adminEditUserDto.getRole());
-        user.setGang(adminEditUserDto.getGang());
-        user.setChatBan(adminEditUserDto.getChatBan());
-        logger.info("Пользователь {} обновлен модератором {}", userMapper.dto(user), getUserById().getLogin());
-
-        return userMapper.adminDto(userRepository.save(user));
-    }
-
-    @Override
-    public boolean setChatBan(UUID userId) {
-        UserEntity user = getUserById(userId);
-        user.setChatBan(!user.getChatBan());
-        return userRepository.save(user).getChatBan();
-    }
-
-
-    @Override
-    public Status editUser(RegisterUserDto user) {
-        UserEntity userEntity = getUserById();
-        userEntity.setName(user.getName());
-        userEntity.setNickname(user.getNickname());
-        //userEntity.setLogin(user.getLogin());
-        //TODO добавить через модуль подтверждения почту
-        //userEntity.setEmail(user.getEmail());
-        userEntity.setAvatar(user.getAvatar());
-        userEntity.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(userEntity);
-
-        String message = "Обновлен пользователь " + user.getLogin();
-        return new Status(true, message);
-    }
-
-    @Override
     public void deleteUserById(UUID id) {
         userRepository.deleteById(id);
-    }
-
-    @Override
-    public ByteArrayInputStream exportMailContacts() throws IOException {
-        return exportUsers(userRepository.findAllByReceiveEmailsTrue());
     }
 
     @Override
@@ -224,50 +174,5 @@ public class UserServiceImpl implements UserService {
         user.setReceiveEmails(!user.getReceiveEmails());
         return userRepository.save(user)
                 .getReceiveEmails();
-    }
-
-    public ByteArrayInputStream exportUsers(List<UserEntity> users) throws IOException {
-        logger.info("{} exported {} contacts.", getUserById().getLogin(), users.size());
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("users");
-
-        CellStyle headerCellStyle = workbook.createCellStyle();
-        Row row = sheet.createRow(0);
-        Cell cell = row.createCell(0);
-        cell.setCellStyle(headerCellStyle);
-
-        cell = row.createCell(1);
-        cell.setCellStyle(headerCellStyle);
-
-
-        Iterator<UserEntity> userIterator = users.listIterator();
-        for (int i = 0; userIterator.hasNext(); i++) {
-            UserEntity contactEntity = userIterator.next();
-            Row header = sheet.createRow(i);
-
-            Cell headerCell = header.createCell(0);
-            headerCell.setCellStyle(headerCellStyle);
-            headerCell.setCellValue(contactEntity.getEmail());
-
-            headerCell = header.createCell(1);
-            headerCell.setCellStyle(headerCellStyle);
-            headerCell.setCellValue(contactEntity.getLogin());
-
-            headerCell = header.createCell(2);
-            headerCell.setCellStyle(headerCellStyle);
-            headerCell.setCellValue(contactEntity.getName());
-
-            headerCell = header.createCell(3);
-            headerCell.setCellStyle(headerCellStyle);
-            headerCell.setCellValue(contactEntity.getId().toString());
-        }
-        sheet.autoSizeColumn(0);
-        sheet.autoSizeColumn(1);
-        sheet.autoSizeColumn(2);
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        workbook.write(outputStream);
-        workbook.close();
-        return new ByteArrayInputStream(outputStream.toByteArray());
     }
 }

@@ -1,6 +1,12 @@
 package org.ailingo.server.entity.user;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,25 +28,5 @@ public class StatisticEntity {
     @MapsId
     @JoinColumn(name = "user_id")
     private UserEntity user;
-
-    @Column(columnDefinition = "integer default 0")
-    public Integer distance = 0;
-    @Column(columnDefinition = "integer default 0")
-    public Integer killedEnemies = 0;
-    @Column(columnDefinition = "integer default 0")
-    public Integer killedMutants = 0;
-    @Column(columnDefinition = "integer default 0")
-    public Integer secretFound = 0;
-    @Column(columnDefinition = "integer default 0")
-    public Integer collectedArtifacts = 0;
-    @Column(columnDefinition = "integer default 0")
-    public Integer boughtItems = 0;
-    @Column(columnDefinition = "integer default 0")
-    public Integer soldItems = 0;
-
-    StatisticEntity(UserEntity user){
-        this.user = user;
-        id = user.getId();
-    }
 
 }

@@ -1,7 +1,5 @@
 package org.ailingo.server.entity.user;
 
-import net.artux.pdanetwork.models.user.enums.Role;
-
 import java.util.UUID;
 
 public interface SimpleUser {
@@ -11,7 +9,5 @@ public interface SimpleUser {
     String getLogin();
 
     String getPassword();
-
-    Role getRole();
 
 }

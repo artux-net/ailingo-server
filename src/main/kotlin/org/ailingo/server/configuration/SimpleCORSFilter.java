@@ -27,6 +27,4 @@ public class SimpleCORSFilter implements Filter {
 
 	public void init(FilterConfig filterConfig) {}
 
-	public void destroy() {}
-
 }

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.ailingo.server.entity.BaseEntity;
+import org.ailingo.server.model.RegisterUserDto;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 
@@ -35,8 +37,14 @@ public class UserEntity extends BaseEntity {
     private Instant lastLoginAt;
     private Instant lastSession;
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    @PrimaryKeyJoinColumn
-    private StatisticEntity statistic;
-
+    public UserEntity(RegisterUserDto registerUser, PasswordEncoder passwordEncoder) {
+        login = registerUser.getLogin();
+        password = passwordEncoder.encode(registerUser.getPassword());
+        email = registerUser.getEmail();
+        name = registerUser.getName();
+        avatar = registerUser.getAvatar();
+        receiveEmails = true;
+        xp = 0;
+        lastLoginAt = registration = Instant.now();
+    }
 }

@@ -15,7 +15,7 @@ import java.util.UUID;
 public abstract class BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID, generator = "UUID")
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column
     protected UUID id;
 
