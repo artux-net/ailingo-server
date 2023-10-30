@@ -7,7 +7,9 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
 import lombok.RequiredArgsConstructor;
+import org.ailingo.server.service.ValuesService;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SwaggerConfig {
 
+    private final ValuesService valuesService;
 
     @Bean
     public GroupedOpenApi restApi() {
@@ -36,7 +39,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openApi() {
         return new OpenAPI()
-                .servers(List.of(new Server()))
+                .servers(List.of(new Server().url(valuesService.getAddress())))
                 .info(new Info()
                         .title("ailingo")
                         .description("Сервисы REST Api. Для использования необходимо зарегистрироваться," +

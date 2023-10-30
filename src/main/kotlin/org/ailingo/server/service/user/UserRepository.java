@@ -1,4 +1,4 @@
-package org.ailingo.server.user;
+package org.ailingo.server.service.user;
 
 import org.ailingo.server.entity.user.SimpleUser;
 import org.ailingo.server.entity.user.UserEntity;

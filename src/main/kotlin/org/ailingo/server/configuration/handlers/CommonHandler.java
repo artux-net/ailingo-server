@@ -5,7 +5,7 @@ import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.ChatUpdate;
 import org.ailingo.server.model.MessageDTO;
 import org.ailingo.server.model.UserMapper;
-import org.ailingo.server.user.UserService;
+import org.ailingo.server.service.user.UserService;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 

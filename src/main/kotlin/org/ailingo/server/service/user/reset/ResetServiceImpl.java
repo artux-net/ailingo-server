@@ -1,4 +1,4 @@
-package org.ailingo.server.user.reset;
+package org.ailingo.server.service.user.reset;
 
 import lombok.RequiredArgsConstructor;
 import org.ailingo.server.controller.PasswordController;
@@ -6,8 +6,8 @@ import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.service.EmailService;
 import org.ailingo.server.service.ValuesService;
-import org.ailingo.server.user.UserRepository;
-import org.ailingo.server.user.UserService;
+import org.ailingo.server.service.user.UserService;
+import org.ailingo.server.service.user.UserRepository;
 import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

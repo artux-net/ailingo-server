@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor
 import org.ailingo.server.model.RegisterUserDto
 import org.ailingo.server.model.Status
 import org.ailingo.server.model.UserDto
-import org.ailingo.server.user.UserService
-import org.ailingo.server.user.reset.ResetService
+import org.ailingo.server.service.user.UserService
+import org.ailingo.server.service.user.reset.ResetService
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "Пользователь")

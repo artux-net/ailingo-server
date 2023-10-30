@@ -1,4 +1,4 @@
-package org.ailingo.server.user;
+package org.ailingo.server.service.user;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

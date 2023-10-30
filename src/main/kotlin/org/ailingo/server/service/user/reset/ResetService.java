@@ -1,4 +1,4 @@
-package org.ailingo.server.user.reset;
+package org.ailingo.server.service.user.reset;
 
 
 import org.ailingo.server.model.Status;

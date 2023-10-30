@@ -1,6 +1,6 @@
 version: '3.9'
 
-name: pdanetwork
+name: ailingo
 
 services:
   backend:
@@ -9,12 +9,10 @@ services:
 
     container_name: ailingo
     restart: unless-stopped
-    depends_on:
-      - db
     environment:
       - SERVER_HOST=${SERVER_HOST}
       - SERVER_PROTOCOL=https
       - SERVER_WEBSOCKET_PROTOCOL=wss
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     ports:
-      - "8090:8080"
+      - "11001:8080"
