@@ -1,0 +1,44 @@
+chat:
+  token: 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
+
+server:
+  servlet:
+    context-path: /ailingo
+  error:
+    include-message: always
+  host: localhost:8080
+  protocol: http
+  websocket:
+    protocol: ws
+
+spring:
+  datasource:
+    url: jdbc:h2:file:/data/demo
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+
+  mail:
+    host: mail.artux.net
+    password: Lvwk7XsCUlbu3UBf
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+    protocol: smtp
+    username: noreply@artux.net
+  boot:
+    admin:
+      client:
+        username: admin
+        password: password
+        url: http://localhost:8080
+
+registration:
+  confirmation:
+    enabled: false
