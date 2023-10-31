@@ -51,4 +51,8 @@ public class ValuesService {
     public void init() {
         log.info("Link to swagger: " + getAddress() + "/swagger-ui/index.html");
     }
+
+    public String getChatToken() {
+        return chatToken;
+    }
 }
