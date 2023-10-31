@@ -1,3 +1,6 @@
+chat:
+  token: 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
+
 server:
   servlet:
     context-path: /ailingo

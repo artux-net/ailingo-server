@@ -18,6 +18,9 @@ import java.util.UUID;
 @Service
 public class ValuesService {
 
+    @Value("${chat.token}")
+    private String chatToken;
+
     @Value("${server.servlet.context-path}")
     private String contextPath;
 

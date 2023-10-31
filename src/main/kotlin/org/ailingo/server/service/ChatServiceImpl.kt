@@ -18,9 +18,9 @@ import java.util.*
 
 @Service
 @Slf4j
-class ChatServiceImpl : ChatService {
+class ChatServiceImpl (valuesService: ValuesService) : ChatService {
 
-    private final var apiKey = "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"
+    private final var apiKey = valuesService.chatToken
     protected var client: OkHttpClient = OkHttpClient()
 
     private lateinit var context: String
