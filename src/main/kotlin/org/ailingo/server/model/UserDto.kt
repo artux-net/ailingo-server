@@ -8,6 +8,8 @@ data class UserDto(
     val login: String = "",
     val avatar: String = "",
     val xp: Int = 0,
+    val coins: Int = 0,
+    val streak: Int = 0,
     val registration: Instant,
     val lastLoginAt: Instant = Instant.now(),
 ) {
