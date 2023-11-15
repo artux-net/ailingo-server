@@ -42,3 +42,6 @@ spring:
 registration:
   confirmation:
     enabled: false
+jwt:
+  secret:
+    key: secret

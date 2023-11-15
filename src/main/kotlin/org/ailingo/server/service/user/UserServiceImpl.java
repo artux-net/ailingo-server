@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
-import org.ailingo.server.model.SecurityUser;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.model.UserDto;
 import org.ailingo.server.model.UserMapper;
@@ -124,14 +123,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAllById(ids);
     }
 
-    public UUID getCurrentId() {
-        return ((SecurityUser) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal()).getId();
+    public String getUserLogin() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     @Override
-    public UserEntity getUserById() {
-        UserEntity userEntity = userRepository.findById(getCurrentId()).orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+    public UserEntity getCurrentUser() {
+        UserEntity userEntity = userRepository.findByLogin(getUserLogin()).orElseThrow(() -> new RuntimeException("Пользователь не найден"));
         if (userEntity.getLastLoginAt().plusSeconds(300).isBefore(Instant.now())) {
             userEntity.setLastLoginAt(Instant.now());
             return userRepository.save(userEntity);
@@ -140,11 +138,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserDto() {
-        return mapper.dto(getUserById());
+        return mapper.dto(getCurrentUser());
     }
 
     @Override
-    public UserEntity getUserById(UUID objectId) {
+    public UserEntity getCurrentUser(UUID objectId) {
         return userRepository.findById(objectId).orElseThrow();
     }
 

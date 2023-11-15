@@ -17,13 +17,13 @@ public interface UserService {
 
     Status handleConfirmation(String token);
 
-    UserEntity getUserById();
+    UserEntity getCurrentUser();
 
     UserDto getUserDto();
 
-    UserEntity getUserById(UUID objectId);
+    UserEntity getCurrentUser(UUID objectId);
 
-    UUID getCurrentId();
+    String getUserLogin();
 
     Optional<UserEntity> getUserByEmail(String email);
 

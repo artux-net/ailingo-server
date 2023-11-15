@@ -21,6 +21,11 @@ import java.util.List;
         type = SecuritySchemeType.HTTP,
         scheme = "basic"
 )
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer"
+)
 @RequiredArgsConstructor
 public class SwaggerConfig {
 
@@ -48,7 +53,8 @@ public class SwaggerConfig {
                         .version("0.1")
                         .license(null)
                 )
-                .addSecurityItem(new SecurityRequirement().addList("basicAuth"));
+                .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }
 
 }

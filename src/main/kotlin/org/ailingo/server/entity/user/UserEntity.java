@@ -45,6 +45,8 @@ public class UserEntity extends BaseEntity {
         avatar = registerUser.getAvatar();
         receiveEmails = true;
         xp = 0;
+        streak = 0;
+        coins = 0;
         lastLoginAt = registration = Instant.now();
     }
 }
