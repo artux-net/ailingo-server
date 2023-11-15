@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.ChatUpdate;
 import org.ailingo.server.model.MessageDTO;
-import org.ailingo.server.model.UserMapper;
 import org.ailingo.server.service.user.UserService;
+import org.ailingo.server.service.user.UserServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.CloseStatus;
@@ -31,7 +31,6 @@ public abstract class SocketHandler implements WebSocketHandler {
     private final HashMap<UUID, WebSocketSession> sessionMap = new HashMap<>();
     private final ObjectMapper objectMapper;
     private final UserService userService;
-    private final UserMapper userMapper;
 
     private static final String USER = "user";
 
@@ -133,7 +132,7 @@ public abstract class SocketHandler implements WebSocketHandler {
             return ChatUpdate.empty();
         else {
             logger.debug("{}: Creating chat-update \"{}\" from {}", this.getClass().getSimpleName(), textMessage, getMember(userSession).getLogin());
-            return ChatUpdate.of(new MessageDTO(userMapper.dto(getMember(userSession)), textMessage));
+            return ChatUpdate.of(new MessageDTO(UserServiceImpl.dto(getMember(userSession)), textMessage));
         }
     }
 

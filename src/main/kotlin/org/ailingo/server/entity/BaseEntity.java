@@ -17,7 +17,7 @@ public abstract class BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column
-    protected UUID id;
+    protected UUID id = UUID.randomUUID();
 
     @Override
     public boolean equals(Object obj) {

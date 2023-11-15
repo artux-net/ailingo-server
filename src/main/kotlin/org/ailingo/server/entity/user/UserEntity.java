@@ -27,9 +27,10 @@ public class UserEntity extends BaseEntity {
     private String name;
     private String avatar;
 
-    private Integer xp;
-    private Integer streak;
-    private Integer coins;
+    private Integer xp = 0;
+    private Integer streak = 0;
+    private Integer coins = 0;
+
     @Column(columnDefinition = "boolean default true")
     private Boolean receiveEmails = true;
 

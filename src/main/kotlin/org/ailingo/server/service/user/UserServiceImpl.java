@@ -6,7 +6,6 @@ import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.model.UserDto;
-import org.ailingo.server.model.UserMapper;
 import org.ailingo.server.service.EmailService;
 import org.ailingo.server.service.ValuesService;
 import org.ailingo.server.util.RandomString;
@@ -44,7 +43,6 @@ public class UserServiceImpl implements UserService {
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
     private final Environment environment;
-    private final UserMapper mapper;
     private final RandomString randomString = new RandomString();
 
     @PostConstruct
@@ -138,7 +136,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserDto() {
-        return mapper.dto(getCurrentUser());
+        return dto(getCurrentUser());
     }
 
     @Override
@@ -172,5 +170,11 @@ public class UserServiceImpl implements UserService {
         user.setReceiveEmails(!user.getReceiveEmails());
         return userRepository.save(user)
                 .getReceiveEmails();
+    }
+
+    public static UserDto dto(UserEntity userEntity) {
+        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getAvatar(),
+                userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
+                userEntity.getRegistration(), userEntity.getLastLoginAt());
     }
 }

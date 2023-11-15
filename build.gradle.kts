@@ -4,9 +4,13 @@ plugins {
     id("java")
     id("org.springframework.boot") version "3.1.4"
     id("io.spring.dependency-management") version "1.1.3"
+    kotlin("kapt") version "1.9.20"
     kotlin("jvm") version "1.8.22"
     kotlin("plugin.spring") version "1.8.22"
     kotlin("plugin.jpa") version "1.8.22"
+
+    kotlin("plugin.lombok") version "1.9.20"
+    id("io.freefair.lombok") version "8.1.0"
 }
 
 group = "org.ailingo"
@@ -52,6 +56,7 @@ dependencies {
     // mapstruct
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
+    //kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
@@ -60,10 +65,15 @@ dependencies {
     compileOnly("org.projectlombok:lombok")
     implementation("com.h2database:h2:2.1.214")
     runtimeOnly("org.postgresql:postgresql")
+    kapt("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
 
+}
+
+kapt {
+    keepJavacAnnotationProcessors = true
 }
 
 dependencyManagement {
