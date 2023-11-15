@@ -2,6 +2,7 @@ package org.ailingo.server.service.user;
 
 import lombok.RequiredArgsConstructor;
 import org.ailingo.server.entity.user.SimpleUser;
+import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.SecurityUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @Component
@@ -22,22 +24,25 @@ public class UserDetailService implements UserDetailsService {
     private final Logger logger = LoggerFactory.getLogger(UserDetailService.class);
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final Environment environment;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         if (username.isBlank())
             throw new UsernameNotFoundException("Access denied.");
 
-        Optional<SimpleUser> userOptional;
+        Optional<UserEntity> userOptional;
         if (username.contains("@")) {
             userOptional = userRepository.getByEmail(username);
         } else
             userOptional = userRepository.getByLogin(username);
 
         if (userOptional.isPresent()) {
-            SimpleUser simpleUser = userOptional.get();
+            UserEntity simpleUser = userOptional.get();
+            if (simpleUser.getLastLoginAt() == null
+                    || simpleUser.getLastLoginAt().plusSeconds(5 * 60).isBefore(Instant.now())) {
+                simpleUser.setLastLoginAt(Instant.now());
+                userRepository.save(simpleUser);
+            }
             UserDetails userDetails = User.builder()
                     .username(simpleUser.getLogin())
                     .password(simpleUser.getPassword())

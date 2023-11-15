@@ -19,7 +19,7 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     List<UserEntity> findAllByReceiveEmailsTrue();
 
-    Optional<SimpleUser> getByLogin(String login);
+    Optional<UserEntity> getByLogin(String login);
 
     Optional<UserEntity> findByLogin(String login);
 
@@ -35,5 +35,5 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     int countAllByRegistrationAfter(Instant afterTime);
 
-    Optional<SimpleUser> getByEmail(String email);
+    Optional<UserEntity> getByEmail(String email);
 }

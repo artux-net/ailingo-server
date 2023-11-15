@@ -3,7 +3,7 @@ version: '3.9'
 name: ailingo
 
 services:
-  backend:
+  ailingo:
     build:
       context: .
 

@@ -1,5 +1,6 @@
 package org.ailingo.server.entity.user;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public interface SimpleUser {
@@ -9,5 +10,7 @@ public interface SimpleUser {
     String getLogin();
 
     String getPassword();
+
+    Instant getLastLoginAt();
 
 }
