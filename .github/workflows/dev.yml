@@ -31,7 +31,8 @@ jobs:
           SERVER_HOST: app.artux.net
 
         run: |
+          docker compose -f "./docker/compose.dev.yml" pull
           docker compose -f "./docker-compose.yml" down
-          docker compose -f "./docker-compose.yml" up -d --no-deps --build ailingo
+          docker compose -f "./docker-compose.yml" up -d
           docker system prune -a -f
         
