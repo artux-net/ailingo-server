@@ -17,16 +17,18 @@ public class UserValidator {
 
     private final UserRepository userRepository;
 
-    private static final String EMAIL_VALIDATION_REGEX = "^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
+    private static final String EMAIL_VALIDATION_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}";
     private static final String LOGIN_VALIDATION_REGEX = "^[a-zA-Z0-9-_.]+$";
     private static final String NAME_VALIDATION_REGEX = "^[A-Za-z\u0400-\u052F']*$";
     private static final String PASSWORD_VALIDATION_REGEX = "^[A-Za-z\\d!@#$%^&*()_+№\";:?><\\[\\]{}]*$";
+    private static final String AVATAR_VALIDATION_REGEX = "^https?://(?:www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)$";
 
     public Status checkUser(RegisterUserDto user) {
         return Stream.of(checkLogin(user.getLogin()),
                         checkName(user.getName()),
                         checkPassword(user.getPassword()),
-                        checkEmail(user.getEmail()))
+                        checkEmail(user.getEmail()),
+                        checkAvatar(user.getAvatar()))
                 .filter(status -> !status.isSuccess())
                 .findFirst()
                 .orElse(new Status(true, "Логин и почта свободны."));
@@ -92,6 +94,16 @@ public class UserValidator {
         }
         if (userRepository.findMemberByEmail(email).isPresent()) {
             return new Status(false, "Пользователь с таким e-mail уже существует.");
+        }
+        return new Status(true);
+    }
+
+    private Status checkAvatar(String avatar) {
+        if (!StringUtils.hasText(avatar)) {
+            return new Status(false, "Аватар не существует.");
+        }
+        if (!avatar.matches(AVATAR_VALIDATION_REGEX)) {
+            return new Status(false, "Ссылка на аватар не ссылка.");
         }
         return new Status(true);
     }
