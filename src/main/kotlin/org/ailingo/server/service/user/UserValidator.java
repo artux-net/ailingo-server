@@ -17,7 +17,7 @@ public class UserValidator {
 
     private final UserRepository userRepository;
 
-    private static final String EMAIL_VALIDATION_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}";
+    private static final String EMAIL_VALIDATION_REGEX = "^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
     private static final String LOGIN_VALIDATION_REGEX = "^[a-zA-Z0-9-_.]+$";
     private static final String NAME_VALIDATION_REGEX = "^[A-Za-z\u0400-\u052F']*$";
     private static final String PASSWORD_VALIDATION_REGEX = "^[A-Za-z\\d!@#$%^&*()_+№\";:?><\\[\\]{}]*$";
@@ -99,11 +99,8 @@ public class UserValidator {
     }
 
     private Status checkAvatar(String avatar) {
-        if (!StringUtils.hasText(avatar)) {
-            return new Status(false, "Аватар не существует.");
-        }
         if (!avatar.matches(AVATAR_VALIDATION_REGEX)) {
-            return new Status(false, "Ссылка на аватар не ссылка.");
+            return new Status(false, "Это должна быть ссылка.");
         }
         return new Status(true);
     }
