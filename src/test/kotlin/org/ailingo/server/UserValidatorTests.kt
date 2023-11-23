@@ -39,7 +39,7 @@ class UserValidatorTests {
 
     @Test
     fun testCheckUser_InvalidEmail() {
-        val invalidUser = RegisterUserDto("username",  "password123", "john@com", "John","https://webref.ru/example/image/fox.png")
+        val invalidUser = RegisterUserDto("username",  "password123", "johnexample.com", "John","https://webref.ru/example/image/fox.png")
         val result: Status = validator.checkUser(invalidUser)
         assertFalse(result.isSuccess())
     }
