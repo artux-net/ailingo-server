@@ -33,6 +33,6 @@ jobs:
         run: |
           docker compose pull
           docker compose down
-          docker compose --profile prod -d up
+          docker compose --profile prod up -d
           docker system prune -a -f
         
