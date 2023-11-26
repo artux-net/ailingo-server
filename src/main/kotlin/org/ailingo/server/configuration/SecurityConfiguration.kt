@@ -43,7 +43,7 @@ class SecurityConfiguration {
                 it.requestMatchers(*WHITE_LIST).permitAll()
                     .anyRequest().authenticated()
             }
-            .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
+           // .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
             .httpBasic(Customizer.withDefaults())
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
             .build()
@@ -70,14 +70,14 @@ class SecurityConfiguration {
         return BCryptPasswordEncoder()
     }
 
-    @Value("\${jwt.secret.key}")
-    var jwtKey: String = ""
+    /*@Value("\${jwt.secret.key}")
+    var jwtKey: String = ""*/
 
-    @Bean
+    /*@Bean
     fun jwtDecoder(): JwtDecoder {
         val secretKey: SecretKey = SecretKeySpec(jwtKey.toByteArray(), "HMACSHA256")
         return NimbusJwtDecoder.withSecretKey(secretKey).build()
-    }
+    }*/
 
 
    /* @Bean
@@ -95,11 +95,11 @@ class SecurityConfiguration {
         }
     }*/
 
-    @Bean
+    /*@Bean
     fun jwtEncoder(): JwtEncoder {
         val key: SecretKey = SecretKeySpec(jwtKey.toByteArray(), "HMACSHA256")
         val immutableSecret: JWKSource<SecurityContext> = ImmutableSecret(key)
         return NimbusJwtEncoder(immutableSecret)
-    }
+    }*/
 
 }

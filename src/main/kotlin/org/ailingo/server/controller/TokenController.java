@@ -17,13 +17,13 @@ import java.util.stream.Collectors;
 
 @RestController
 @Tag(name = "Токены для аутентификации")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @RequestMapping("/api/v1/token")
 public class TokenController {
 
-    private final JwtEncoder encoder;
+    //private final JwtEncoder encoder;
 
-	@PreAuthorize("isAuthenticated()")
+	/*@PreAuthorize("isAuthenticated()")
 	@PostMapping
     public String token(Authentication authentication) {
         Instant now = Instant.now();
@@ -42,6 +42,6 @@ public class TokenController {
 				.build();
 		// @formatter:on
         return this.encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-    }
+    }*/
 
 }
