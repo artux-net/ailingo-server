@@ -14,7 +14,7 @@ SERVER_WEBSOCKET_PROTOCOL=ws
 docker system prune -a -f
 docker compose --profile dev -d up  
 docker compose down   
-docker compose -f "./docker-compose.yml" pull
+docker compose pull  
 ./gradlew build
 ```
 
