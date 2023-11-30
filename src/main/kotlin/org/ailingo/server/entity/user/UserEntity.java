@@ -5,10 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.ailingo.server.entity.BaseEntity;
+import org.ailingo.server.entity.dictionary.DictionaryEntity;
+import org.ailingo.server.entity.strike.StrikeEntity;
+import org.ailingo.server.entity.topic.TopicEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @NoArgsConstructor
 @Getter
@@ -50,4 +55,13 @@ public class UserEntity extends BaseEntity {
         coins = 0;
         lastLoginAt = registration = Instant.now();
     }
+
+    @ManyToMany
+    private Set<TopicEntity> topics = new HashSet<>();
+
+    @OneToMany
+    private Set<StrikeEntity> strikes = new HashSet<>();
+
+    @OneToMany
+    private Set<DictionaryEntity> words = new HashSet<>();
 }
