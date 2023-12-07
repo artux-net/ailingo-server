@@ -11,8 +11,8 @@ import org.ailingo.server.entity.user.UserEntity;
 @Getter
 @Setter
 @Entity
-@Table(name = "dictionary")
-public class DictionaryEntity extends BaseEntity{
+@Table(name = "word")
+public class Word extends BaseEntity{
 
     private String word;
     private String locale;

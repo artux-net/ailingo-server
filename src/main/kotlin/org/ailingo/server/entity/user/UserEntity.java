@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.ailingo.server.entity.BaseEntity;
-import org.ailingo.server.entity.dictionary.DictionaryEntity;
+import org.ailingo.server.entity.dictionary.Word;
 import org.ailingo.server.entity.strike.StrikeEntity;
 import org.ailingo.server.entity.topic.TopicEntity;
 import org.ailingo.server.model.RegisterUserDto;
@@ -63,5 +63,5 @@ public class UserEntity extends BaseEntity {
     private Set<StrikeEntity> strikes = new HashSet<>();
 
     @OneToMany
-    private Set<DictionaryEntity> words = new HashSet<>();
+    private Set<Word> words = new HashSet<>();
 }
