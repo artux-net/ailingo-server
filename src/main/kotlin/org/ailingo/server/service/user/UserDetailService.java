@@ -1,17 +1,14 @@
 package org.ailingo.server.service.user;
 
 import lombok.RequiredArgsConstructor;
-import org.ailingo.server.entity.user.SimpleUser;
 import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.SecurityUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -53,5 +50,4 @@ public class UserDetailService implements UserDetailsService {
             throw new UsernameNotFoundException("User not found");
         }
     }
-
 }

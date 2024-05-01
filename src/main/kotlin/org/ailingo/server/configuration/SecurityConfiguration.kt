@@ -1,12 +1,5 @@
 package org.ailingo.server.configuration
 
-import com.nimbusds.jose.JOSEException
-import com.nimbusds.jose.jwk.JWKSelector
-import com.nimbusds.jose.jwk.JWKSet
-import com.nimbusds.jose.jwk.source.ImmutableSecret
-import com.nimbusds.jose.jwk.source.JWKSource
-import com.nimbusds.jose.proc.SecurityContext
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.Customizer
@@ -15,19 +8,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtEncoder
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
 import org.springframework.security.web.SecurityFilterChain
-import java.security.InvalidAlgorithmParameterException
-import java.security.NoSuchAlgorithmException
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.spec.SecretKeySpec
 
 
 @Configuration
@@ -39,10 +22,15 @@ class SecurityConfiguration {
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         return http.csrf { obj: CsrfConfigurer<HttpSecurity> -> obj.disable() }
             .cors(Customizer.withDefaults())
-            .authorizeHttpRequests {
-                it.requestMatchers(*WHITE_LIST).permitAll()
-                    .anyRequest().authenticated()
+            .headers { headers ->
+                headers.frameOptions { frameOptions ->
+                    frameOptions.disable()
+                }
             }
+//            .authorizeHttpRequests {
+//                it.requestMatchers(*WHITE_LIST).permitAll()
+//                    .anyRequest().authenticated()
+//            }
            // .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
             .httpBasic(Customizer.withDefaults())
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }

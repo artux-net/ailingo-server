@@ -6,9 +6,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.ailingo.server.entity.BaseEntity;
 import org.ailingo.server.model.RegisterUserDto;
+import org.ailingo.server.saved_topics.SavedTopicsEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @NoArgsConstructor
 @Getter
@@ -49,5 +52,20 @@ public class UserEntity extends BaseEntity {
         streak = 0;
         coins = 0;
         lastLoginAt = registration = Instant.now();
+    }
+
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<SavedTopicsEntity> savedTopics = new HashSet<>();
+
+    @ElementCollection
+    private Set<String> favoriteWords = new HashSet<>();
+
+    public void addCoins(int amount) {
+        this.coins += amount;
+    }
+
+    public void removeCoins(int amount) {
+        this.coins -= amount;
     }
 }

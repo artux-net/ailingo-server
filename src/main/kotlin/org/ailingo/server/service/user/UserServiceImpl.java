@@ -6,26 +6,21 @@ import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.model.UserDto;
+import org.ailingo.server.saved_topics.SavedTopicsEntity;
 import org.ailingo.server.service.EmailService;
 import org.ailingo.server.service.ValuesService;
+import org.ailingo.server.topics.TopicEntity;
+import org.ailingo.server.topics.TopicRepository;
 import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Transactional
@@ -35,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
+    private final TopicRepository topicRepository;
     private final EmailService emailService;
     private final ValuesService valuesService;
     private final UserValidator userValidator;
@@ -42,7 +38,6 @@ public class UserServiceImpl implements UserService {
 
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
-    private final Environment environment;
     private final RandomString randomString = new RandomString();
 
     @PostConstruct
@@ -138,12 +133,6 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserDto() {
         return dto(getCurrentUser());
     }
-
-    @Override
-    public UserEntity getCurrentUser(UUID objectId) {
-        return userRepository.findById(objectId).orElseThrow();
-    }
-
     @Override
     public Optional<UserEntity> getUserByEmail(String email) {
         return userRepository.findMemberByEmail(email);
@@ -154,27 +143,63 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByLogin(login).orElseThrow(() -> new RuntimeException("Пользователя не существует"));
     }
 
-    @Override
-    public List<UserEntity> getUsersByLogins(Collection<String> logins) {
-        return userRepository.findAllByLoginIn(logins);
-    }
-
-    @Override
-    public void deleteUserById(UUID id) {
-        userRepository.deleteById(id);
-    }
-
-    @Override
-    public boolean changeEmailSetting(UUID id) {
-        UserEntity user = userRepository.findById(id).orElseThrow();
-        user.setReceiveEmails(!user.getReceiveEmails());
-        return userRepository.save(user)
-                .getReceiveEmails();
-    }
-
     public static UserDto dto(UserEntity userEntity) {
         return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getAvatar(),
                 userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
                 userEntity.getRegistration(), userEntity.getLastLoginAt());
+    }
+
+    @Override
+    public Set<TopicEntity> getUserSavedTopics() {
+        UserEntity currentUser = getCurrentUser();
+        Set<TopicEntity> savedTopics = new HashSet<>();
+        currentUser.getSavedTopics().forEach(savedTopicsEntity -> savedTopics.addAll(savedTopicsEntity.getSavedTopics()));
+        return savedTopics;
+    }
+    @Override
+    public void saveUserTopics(Set<TopicEntity> topics) {
+        UserEntity currentUser = getCurrentUser();
+        SavedTopicsEntity savedTopicsEntity = new SavedTopicsEntity();
+        savedTopicsEntity.setUser(currentUser);
+        savedTopicsEntity.setSavedTopics(topics);
+        currentUser.getSavedTopics().add(savedTopicsEntity);
+        userRepository.save(currentUser);
+    }
+
+    @Override
+    public void removeUserTopic(TopicEntity topic) {
+        UserEntity currentUser = getCurrentUser();
+        currentUser.getSavedTopics().removeIf(savedTopicsEntity -> savedTopicsEntity.getSavedTopics().contains(topic));
+        userRepository.save(currentUser);
+    }
+
+    public Status addWordToFavorites(String word) {
+        UserEntity currentUser = getCurrentUser();
+        currentUser.getFavoriteWords().add(word);
+        userRepository.save(currentUser);
+        return new Status(true, "Слово добавлено в избранное.");
+    }
+
+    public Status removeWordFromFavorites(String word) {
+        UserEntity currentUser = getCurrentUser();
+        currentUser.getFavoriteWords().remove(word);
+        userRepository.save(currentUser);
+        return new Status(true, "Слово удалено из избранного.");
+    }
+
+    public Set<String> getFavoriteWords() {
+        return getCurrentUser().getFavoriteWords();
+    }
+
+    public void addCoinsToCurrentUser(int amount) {
+        UserEntity user = getCurrentUser();
+        user.addCoins(amount);
+        userRepository.save(user);
+    }
+
+    public void removeCoinsFromCurrentUser(int amount) {
+        UserEntity user = getCurrentUser();
+        user.removeCoins(amount);
+        userRepository.save(user);
     }
 }

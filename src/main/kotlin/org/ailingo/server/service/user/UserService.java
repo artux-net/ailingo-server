@@ -5,11 +5,9 @@ import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.model.UserDto;
+import org.ailingo.server.topics.TopicEntity;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public interface UserService {
 
@@ -21,19 +19,27 @@ public interface UserService {
 
     UserDto getUserDto();
 
-    UserEntity getCurrentUser(UUID objectId);
-
     String getUserLogin();
 
     Optional<UserEntity> getUserByEmail(String email);
 
     UserEntity getUserByLogin(String login);
 
-    void deleteUserById(UUID id);
-
-    boolean changeEmailSetting(UUID id);
-
     List<UserEntity> getUsersByIds(Collection<UUID> ids);
-    List<UserEntity> getUsersByLogins(Collection<String> logins);
 
+    Set<TopicEntity> getUserSavedTopics();
+
+    void saveUserTopics(Set<TopicEntity> topics);
+
+    void removeUserTopic(TopicEntity topic);
+
+    Status addWordToFavorites(String word);
+
+    Status removeWordFromFavorites(String word);
+
+    Set<String> getFavoriteWords();
+
+    void addCoinsToCurrentUser(int amount);
+
+    void removeCoinsFromCurrentUser(int amount);
 }
