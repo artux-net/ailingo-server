@@ -12,7 +12,7 @@ SERVER_WEBSOCKET_PROTOCOL=ws
 Для запуска можно воспользоваться следующим скриптом и запустить его прямо в idea через две зеленые стрелки слева от скрипта
 ```shell
 docker system prune -a -f
-docker compose --profile dev up -d  
+docker compose --profile dev up
 docker compose down   
 docker compose pull  
 ./gradlew build
@@ -21,7 +21,7 @@ docker compose pull
 ```shell
 # Пересборка образа
 docker-compose build
-docker-compose up -d
+docker-compose up
 ```
 
 дефолтные данные для входа 
