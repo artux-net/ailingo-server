@@ -25,16 +25,23 @@ jobs:
 
       - run: ./gradlew build --no-daemon -x test
 
-      - name: Run services
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Pull Docker images
+        run: docker compose pull
+
+      - name: Stop existing containers
+        run: docker compose down --remove-orphans
+
+      - name: Start services
         env:
-          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
+          CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
-
         run: |
-          docker compose build
-          docker compose pull
-          docker compose down --remove-orphans
           docker compose --profile prod up -d
-          docker system prune -a -f
+
+      - name: Clean up Docker system
+        run: docker system prune -a -f
