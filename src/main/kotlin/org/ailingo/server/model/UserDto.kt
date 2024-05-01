@@ -12,6 +12,4 @@ data class UserDto(
     val streak: Int = 0,
     val registration: Instant,
     val lastLoginAt: Instant = Instant.now(),
-) {
-
-}
+)

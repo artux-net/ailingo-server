@@ -1,5 +1,6 @@
 package org.ailingo.server.service
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.lilittlecat.chatgpt.offical.ChatGPT
 import com.lilittlecat.chatgpt.offical.entity.*
@@ -18,7 +19,7 @@ import java.util.*
 
 @Service
 @Slf4j
-class ChatServiceImpl (valuesService: ValuesService) : ChatService {
+class ChatServiceImpl(valuesService: ValuesService) : ChatService {
 
     private final var apiKey = valuesService.chatToken
     protected var client: OkHttpClient = OkHttpClient()
@@ -35,7 +36,7 @@ class ChatServiceImpl (valuesService: ValuesService) : ChatService {
         chat = ChatGPT(apiKey)
 
         setContext(
-                    "You are waiter. User decide to go to a restaurant to enjoy delicious food and a pleasant atmosphere. " +
+            "You are waiter. User decide to go to a restaurant to enjoy delicious food and a pleasant atmosphere. " +
                     "When User walked inside, the waiter greeted you and offered User a menu. " +
                     "waiter was very friendly and willing to help you with your food choices. " +
                     "User asked him questions about the composition of the dishes and asked about his recommendations. " +
@@ -67,7 +68,7 @@ class ChatServiceImpl (valuesService: ValuesService) : ChatService {
         this.userRole = "\n$userRole: "
     }
 
-    fun makeCall(message: String):ChatCompletionResponseBody{
+    fun makeCall(message: String): ChatCompletionResponseBody {
         val message = Message.builder().role("user").content(message).build()
         history.add(message)
 
@@ -80,8 +81,11 @@ class ChatServiceImpl (valuesService: ValuesService) : ChatService {
             objectMapper.writeValueAsString(requestBody)
                 .toRequestBody("application/json; charset=utf-8".toMediaType())
 
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
+
         val request: Request = Request.Builder()
-            .url(Constant.CHAT_COMPLETION_API_URL)
+            .url("https://api.openai.com/v1/chat/completions")
             .header("Authorization", "Bearer $apiKey")
             .post(body)
             .build()
@@ -97,7 +101,6 @@ class ChatServiceImpl (valuesService: ValuesService) : ChatService {
                         throw BizException(response.code, response.body!!.string())
                     }
                 } else {
-                    //assert(response.body() != null)
                     val bodyString: String = response.body!!.string()
                     objectMapper.readValue(
                         bodyString,
@@ -120,7 +123,7 @@ class ChatServiceImpl (valuesService: ValuesService) : ChatService {
             result.append(choice.getMessage().getContent())
         }
         history.add(Message.builder().role("assistant").content(result.toString()).build())
-        if (history.size>7)
+        if (history.size > 7)
             history.removeAt(1)
 
         return result.toString()
