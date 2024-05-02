@@ -32,7 +32,7 @@ jobs:
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
         run: |
-          docker system prune -a -f
-          docker compose build
+          docker compose pull
           docker compose down --remove-orphans
           docker compose --profile prod up -d
+          docker system prune -a -f
