@@ -31,7 +31,8 @@ jobs:
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
-        run: /docker compose pull
+        run: |
+          docker compose pull
 
       - name: Run 2
         env:
@@ -39,7 +40,8 @@ jobs:
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
-        run: /docker compose down --remove-orphans
+        run: |
+          docker compose down --remove-orphans
 
       - name: Run 3
         env:
@@ -47,7 +49,8 @@ jobs:
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
-        run: /docker compose --profile prod up -d
+        run: |
+          docker compose --profile prod up -d
 
       - name: Run 4
         env:
@@ -55,5 +58,6 @@ jobs:
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
-        run: /docker system prune -a -f
+        run: |
+          docker system prune -a -f
 
