@@ -53,7 +53,7 @@ public class UserValidator {
         return new Status(true);
     }
 
-    private Status checkName(String name) {
+    public Status checkName(String name) {
         if (!StringUtils.hasText(name)) {
             return new Status(false, "Имя не может быть пустым.");
         }
@@ -68,7 +68,7 @@ public class UserValidator {
         return new Status(true);
     }
 
-    private Status checkPassword(String password) {
+    public Status checkPassword(String password) {
         if (!StringUtils.hasText(password)) {
             return new Status(false, "Пароль не может быть пустым.");
         }
@@ -83,7 +83,7 @@ public class UserValidator {
         return new Status(true);
     }
 
-    private Status checkEmail(String email) {
+    public Status checkEmail(String email) {
         if (!StringUtils.hasText(email)) {
             return new Status(false, "Почта не может быть пустой.");
         }

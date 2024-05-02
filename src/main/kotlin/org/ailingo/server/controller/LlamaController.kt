@@ -29,5 +29,4 @@ class LlamaController(
     fun setAIRole(@RequestParam role: String) {
         chatService.setAIRole(role)
     }
-
 }

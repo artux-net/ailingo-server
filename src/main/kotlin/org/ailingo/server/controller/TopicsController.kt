@@ -6,11 +6,10 @@ import org.ailingo.server.topics.TopicEntity
 import org.ailingo.server.topics.TopicRepository
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-//import org.ailingo.server.entity.topics.TopicService
 import org.springframework.web.bind.annotation.*
 
 
-@Tag(name = "Топики")
+@Tag(name = "Общий список топиков")
 @RestController
 @RequestMapping("/api/v1/topics/")
 class TopicsController(
@@ -19,7 +18,7 @@ class TopicsController(
     @Operation(summary = "Получение топиков")
     @GetMapping("/getTopics")
     fun getResponse(): List<TopicEntity> {
-        return topicRepository.allTopics
+        return topicRepository.findAll()
     }
 
     @Operation(summary = "Добавление нового топика")

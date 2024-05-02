@@ -15,4 +15,6 @@ public class TopicEntity {
     private Long id;
     private String name;
     private String image;
+    private Integer price;
+    private Integer level;
 }

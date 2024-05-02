@@ -11,9 +11,9 @@ import java.util.Set;
 
 
 @Entity
-@Table(name = "saved_topics")
 @Getter
 @Setter
+@Table(name = "saved_topics")
 public class SavedTopicsEntity {
 
     @Id

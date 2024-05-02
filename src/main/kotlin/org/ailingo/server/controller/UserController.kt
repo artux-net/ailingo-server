@@ -8,7 +8,6 @@ import org.ailingo.server.model.Status
 import org.ailingo.server.model.UserDto
 import org.ailingo.server.service.user.UserService
 import org.ailingo.server.service.user.reset.ResetService
-import org.ailingo.server.topics.TopicEntity
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
@@ -40,44 +39,6 @@ class UserController(
         return resetService.sendResetPasswordLetter(email)
     }
 
-    @Operation(summary = "Получение сохраненных топиков пользователя")
-    @GetMapping("/topics")
-    fun getUserSavedTopics(): Set<TopicEntity> {
-        return userService.getUserSavedTopics()
-    }
-
-    @Operation(summary = "Сохранение топиков пользователя")
-    @PostMapping("/topics/save")
-    fun saveUserTopics(@RequestBody topics: Set<TopicEntity>): Status {
-        userService.saveUserTopics(topics)
-        return Status(true, "Сохранено успешно.")
-    }
-
-    @Operation(summary = "Удаление топика пользователя")
-    @DeleteMapping("/topics/remove")
-    fun removeUserTopic(@RequestBody topic: TopicEntity): Status {
-        userService.removeUserTopic(topic)
-        return Status(true, "Удалено успешно.")
-    }
-
-    @PostMapping("/favorites/add")
-    @Operation(summary = "Добавить слово в избранное")
-    fun addWordToFavorites(@RequestParam("word") word: String): Status {
-        return userService.addWordToFavorites(word)
-    }
-
-    @DeleteMapping("/favorites/remove")
-    @Operation(summary = "Удалить слово из избранного")
-    fun removeWordFromFavorites(@RequestParam("word") word: String): Status {
-        return userService.removeWordFromFavorites(word)
-    }
-
-    @GetMapping("/favorites")
-    @Operation(summary = "Получить список избранных слов")
-    fun getFavoriteWords(): Set<String>? {
-        return userService.favoriteWords
-    }
-
     @PostMapping("/addCoins")
     @Operation(summary = "Добавить монеты пользователю")
     fun addCoinsToCurrentUser(@RequestParam("amount") amount: Int): Status {
@@ -90,5 +51,24 @@ class UserController(
     fun removeCoinsFromCurrentUser(@RequestParam("amount") amount: Int): Status {
         userService.removeCoinsFromCurrentUser(amount)
         return Status(true, "Монеты успешно убавлены.")
+    }
+
+    @Operation(summary = "Обновление профиля пользователя")
+    @PutMapping("/updateProfile")
+    fun updateUserProfile(
+        @RequestParam(name = "name") name: String,
+        @RequestParam(name = "email") email: String,
+        @RequestParam(name = "avatar") avatar: String?
+    ): Status {
+        return userService.updateUserProfile(name, email, avatar)
+    }
+
+    @Operation(summary = "Изменение пароля пользователя")
+    @PutMapping("/changePassword")
+    fun changePassword(
+        @RequestParam("oldPassword") oldPassword: String,
+        @RequestParam("newPassword") newPassword: String
+    ): Status {
+        return userService.changePassword(oldPassword, newPassword)
     }
 }

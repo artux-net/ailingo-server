@@ -2,6 +2,7 @@ package org.ailingo.server.service.user;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.ailingo.server.chat_history.ChatHistoryEntity;
 import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.ailingo.server.model.Status;
@@ -10,7 +11,6 @@ import org.ailingo.server.saved_topics.SavedTopicsEntity;
 import org.ailingo.server.service.EmailService;
 import org.ailingo.server.service.ValuesService;
 import org.ailingo.server.topics.TopicEntity;
-import org.ailingo.server.topics.TopicRepository;
 import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,6 @@ public class UserServiceImpl implements UserService {
     private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
-    private final TopicRepository topicRepository;
     private final EmailService emailService;
     private final ValuesService valuesService;
     private final UserValidator userValidator;
@@ -144,7 +143,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public static UserDto dto(UserEntity userEntity) {
-        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getAvatar(),
+        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(),userEntity.getEmail(), userEntity.getAvatar(),
                 userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
                 userEntity.getRegistration(), userEntity.getLastLoginAt());
     }
@@ -201,5 +200,53 @@ public class UserServiceImpl implements UserService {
         UserEntity user = getCurrentUser();
         user.removeCoins(amount);
         userRepository.save(user);
+    }
+
+    @Override
+    public Status updateUserProfile(String name, String email, String avatar) {
+        UserEntity currentUser = getCurrentUser();
+
+        Status nameStatus = userValidator.checkName(name);
+        if (!nameStatus.isSuccess()) {
+            return nameStatus;
+        }
+        Status emailStatus = userValidator.checkEmail(email);
+        if (!emailStatus.isSuccess()) {
+            return emailStatus;
+        }
+        if (avatar != null && !avatar.isEmpty()) {
+            currentUser.setAvatar(avatar);
+        }
+        userRepository.save(currentUser);
+        return new Status(true, "Профиль успешно обновлен.");
+    }
+
+    @Override
+    public Status changePassword(String oldPassword, String newPassword) {
+        UserEntity currentUser = getCurrentUser();
+        if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
+            return new Status(false, "Старый пароль введен неверно.");
+        }
+        Status status = userValidator.checkPassword(newPassword);
+        if (!status.isSuccess()) {
+            return status;
+        }
+        currentUser.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(currentUser);
+        return new Status(true, "Пароль успешно изменен.");
+    }
+
+    @Override
+    public void saveUserChat(UserEntity user, String chatContent) {
+        ChatHistoryEntity chat = new ChatHistoryEntity();
+        chat.setUser(user);
+        chat.setChatContent(chatContent);
+        user.getChatHistory().add(chat);
+        userRepository.save(user);
+    }
+
+    @Override
+    public List<ChatHistoryEntity> getUserChats(UserEntity user) {
+        return new ArrayList<>(user.getChatHistory());
     }
 }
