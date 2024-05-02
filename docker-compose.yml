@@ -13,8 +13,7 @@ services:
     labels:
       io.portainer.accesscontrol.teams: dev,prod
 
-  backend-prod:
-    &backend
+  backend-prod: &backend
     build:
       context: .
     depends_on:
@@ -37,6 +36,7 @@ services:
 
   backend-dev:
     <<: *backend
+    container_name: ailingo-dev
     profiles:
       - dev
     ports:
