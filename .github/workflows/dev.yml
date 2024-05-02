@@ -33,31 +33,7 @@ jobs:
           SERVER_WEBSOCKET_PROTOCOL: wss
         run: |
           docker compose pull
-
-      - name: Run 2
-        env:
-          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
-          SERVER_HOST: app.artux.net
-          SERVER_PROTOCOL: https
-          SERVER_WEBSOCKET_PROTOCOL: wss
-        run: |
           docker compose down --remove-orphans
-
-      - name: Run 3
-        env:
-          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
-          SERVER_HOST: app.artux.net
-          SERVER_PROTOCOL: https
-          SERVER_WEBSOCKET_PROTOCOL: wss
-        run: |
           docker compose --profile prod up -d
-
-      - name: Run 4
-        env:
-          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
-          SERVER_HOST: app.artux.net
-          SERVER_PROTOCOL: https
-          SERVER_WEBSOCKET_PROTOCOL: wss
-        run: |
           docker system prune -a -f
 
