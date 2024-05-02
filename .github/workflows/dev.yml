@@ -31,9 +31,13 @@ jobs:
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
+        run: docker compose pull
 
-        run: |
-          docker compose pull &&
-          docker compose down --remove-orphans &&
-          docker compose --profile prod up -d &&
-          docker system prune -a -f
+      - name: Stop services
+        run: docker compose down --remove-orphans
+
+      - name: Start services
+        run: docker compose --profile prod up -d
+
+      - name: Clean up
+        run: docker system prune -a -f
