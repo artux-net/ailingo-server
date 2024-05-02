@@ -25,15 +25,15 @@ jobs:
 
       - run: ./gradlew build --no-daemon -x test
 
-      - name: Run services
-        env:
-          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
-          SERVER_HOST: app.artux.net
-          SERVER_PROTOCOL: https
-          SERVER_WEBSOCKET_PROTOCOL: wss
-
-        run: |
-          docker system prune -a -f
-          docker compose build
-          docker compose down --remove-orphans
-          docker compose --profile prod up -d
+#      - name: Run services
+#        env:
+#          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
+#          SERVER_HOST: app.artux.net
+#          SERVER_PROTOCOL: https
+#          SERVER_WEBSOCKET_PROTOCOL: wss
+#
+#        run: |
+#          docker system prune -a -f
+#          docker compose build
+#          docker compose down --remove-orphans
+#          docker compose --profile prod up -d
