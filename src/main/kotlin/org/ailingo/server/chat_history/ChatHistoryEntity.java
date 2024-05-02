@@ -21,4 +21,5 @@ public class ChatHistoryEntity extends BaseEntity {
     private String chatContent;
 
     private LocalDateTime timestamp;
+
 }
