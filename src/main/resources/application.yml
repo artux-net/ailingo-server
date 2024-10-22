@@ -20,11 +20,6 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-  h2:
-    console:
-      path: /h2-console
-      enabled: true
-
 
   mail:
     host: mail.artux.net

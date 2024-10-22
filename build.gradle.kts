@@ -4,12 +4,12 @@ plugins {
     id("java")
     id("org.springframework.boot") version "3.1.4"
     id("io.spring.dependency-management") version "1.1.3"
-    kotlin("kapt") version "1.9.20"
+    kotlin("kapt") version "1.9.21"
     kotlin("jvm") version "1.8.22"
     kotlin("plugin.spring") version "1.8.22"
     kotlin("plugin.jpa") version "1.8.22"
 
-    kotlin("plugin.lombok") version "1.9.20"
+    kotlin("plugin.lombok") version "1.9.21"
     id("io.freefair.lombok") version "8.1.0"
 }
 
@@ -60,7 +60,7 @@ dependencies {
     //kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     compileOnly("org.projectlombok:lombok")

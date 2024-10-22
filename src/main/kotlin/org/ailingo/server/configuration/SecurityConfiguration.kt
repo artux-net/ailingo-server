@@ -11,6 +11,9 @@ import org.springframework.security.config.annotation.web.configurers.FormLoginC
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 
 @Configuration
@@ -21,20 +24,33 @@ class SecurityConfiguration {
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         return http.csrf { obj: CsrfConfigurer<HttpSecurity> -> obj.disable() }
-            .cors(Customizer.withDefaults())
+            .cors {
+                it.configurationSource(corsConfigurationSource())
+            }
             .headers { headers ->
                 headers.frameOptions { frameOptions ->
                     frameOptions.disable()
                 }
             }
-//            .authorizeHttpRequests {
-//                it.requestMatchers(*WHITE_LIST).permitAll()
-//                    .anyRequest().authenticated()
-//            }
+            .authorizeHttpRequests {
+                it.requestMatchers(*WHITE_LIST).permitAll()
+                    .anyRequest().authenticated()
+            }
            // .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
             .httpBasic(Customizer.withDefaults())
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
             .build()
+    }
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration()
+        configuration.allowedOrigins = listOf("*") //  Или конкретные origins, например: listOf("https://localhost:8080")
+        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS") // Разрешенные методы
+        configuration.allowedHeaders = listOf("*") // Разрешенные заголовки
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration) // Применяем конфигурацию ко всем endpoint'ам
+        return source
     }
 
     companion object {
@@ -57,37 +73,4 @@ class SecurityConfiguration {
     fun passwordEncoder(): PasswordEncoder {
         return BCryptPasswordEncoder()
     }
-
-    /*@Value("\${jwt.secret.key}")
-    var jwtKey: String = ""*/
-
-    /*@Bean
-    fun jwtDecoder(): JwtDecoder {
-        val secretKey: SecretKey = SecretKeySpec(jwtKey.toByteArray(), "HMACSHA256")
-        return NimbusJwtDecoder.withSecretKey(secretKey).build()
-    }*/
-
-
-   /* @Bean
-    @Throws(
-        NoSuchAlgorithmException::class,
-        InvalidAlgorithmParameterException::class,
-        JOSEException::class
-    )
-    fun jwkSource(): JWKSource<SecurityContext> {
-        val keySet = JWKSet(KeyGenerator.getInstance("HMACSHA256").provider.) // <- KeyGenerator is an external code
-        return JWKSource { jwkSelector: JWKSelector, context: SecurityContext? ->
-            jwkSelector.select(
-                keySet
-            )
-        }
-    }*/
-
-    /*@Bean
-    fun jwtEncoder(): JwtEncoder {
-        val key: SecretKey = SecretKeySpec(jwtKey.toByteArray(), "HMACSHA256")
-        val immutableSecret: JWKSource<SecurityContext> = ImmutableSecret(key)
-        return NimbusJwtEncoder(immutableSecret)
-    }*/
-
 }

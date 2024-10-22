@@ -3,8 +3,6 @@ package org.ailingo.server.topics;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
-
 @Entity
 @Setter
 @Getter
