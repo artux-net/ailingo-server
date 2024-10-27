@@ -5,9 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
 import org.ailingo.server.model.Status
 import org.ailingo.server.service.user.UserService
-import org.ailingo.server.topics.TopicEntity
+import org.ailingo.server.entity.TopicEntity
 import org.springframework.web.bind.annotation.*
-import java.util.*
 
 
 @Tag(name = "Сохранные топики")

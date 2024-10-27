@@ -1,10 +1,9 @@
-package org.ailingo.server.saved_topics;
+package org.ailingo.server.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.ailingo.server.entity.user.UserEntity;
-import org.ailingo.server.topics.TopicEntity;
 
 import java.util.HashSet;
 import java.util.Set;

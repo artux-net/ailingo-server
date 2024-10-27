@@ -1,4 +1,4 @@
-package org.ailingo.server.topics;
+package org.ailingo.server.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

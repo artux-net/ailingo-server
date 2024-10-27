@@ -1,23 +1,77 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-plugins {
-    id("java")
-    id("org.springframework.boot") version "3.1.4"
-    id("io.spring.dependency-management") version "1.1.3"
-    kotlin("kapt") version "1.9.21"
-    kotlin("jvm") version "1.8.22"
-    kotlin("plugin.spring") version "1.8.22"
-    kotlin("plugin.jpa") version "1.8.22"
+repositories {
+    mavenCentral()
+}
 
-    kotlin("plugin.lombok") version "1.9.21"
+plugins {
+    val kotlinVersion = "1.9.21"
+    kotlin("kapt") version kotlinVersion
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.spring") version kotlinVersion
+    kotlin("plugin.jpa") version kotlinVersion
+    kotlin("plugin.lombok") version kotlinVersion
+
+    id("java")
     id("io.freefair.lombok") version "8.1.0"
+    id("org.springframework.boot") version "3.3.2"
+    id("io.spring.dependency-management") version "1.1.3"
 }
 
 group = "org.ailingo"
 version = "0.0.1-SNAPSHOT"
 
+val javaVersion = JavaVersion.VERSION_17
+
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = javaVersion
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    // temp
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
+    // Kotlin
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    // PostgreSQL
+    runtimeOnly("org.postgresql:postgresql")
+
+    // ChatGPT
+    implementation("com.lilittlecat:chatgpt:1.0.3")
+
+    // Mapstruct
+    implementation("org.mapstruct:mapstruct:1.5.5.Final")
+    annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
+    kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
+
+    // Jackson
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    // Lombok
+    kapt("org.projectlombok:lombok")
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // Tests
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
+
+    val testContainers = "1.19.8"
+    testImplementation("org.testcontainers:testcontainers:$testContainers")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:$testContainers"))
+    testImplementation("org.testcontainers:postgresql:$testContainers")
+    testImplementation("org.testcontainers:junit-jupiter:$testContainers")
+
 }
 
 configurations {
@@ -26,70 +80,30 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
-}
-
 configure<SourceSetContainer> {
     named("main") {
         java.srcDir("src/main/kotlin")
     }
 }
 
-extra["springBootAdminVersion"] = "3.1.5"
-
-dependencies {
-    runtimeOnly ("com.h2database:h2")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-data-rest")
-    implementation("org.springframework.boot:spring-boot-starter-mail")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-
-    // https://mvnrepository.com/artifact/com.lilittlecat/chatgpt
-    implementation("com.lilittlecat:chatgpt:1.0.0")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-
-    // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
-
-    // mapstruct
-    implementation("org.mapstruct:mapstruct:1.5.5.Final")
-    annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
-    //kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
-
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springframework.boot:spring-boot-starter-websocket")
-    compileOnly("org.projectlombok:lombok")
-    implementation("com.h2database:h2:2.1.214")
-    runtimeOnly("org.postgresql:postgresql")
-    kapt("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
-
-}
 
 kapt {
     keepJavacAnnotationProcessors = true
 }
 
-dependencyManagement {
-    imports {
-        mavenBom("de.codecentric:spring-boot-admin-dependencies:${property("springBootAdminVersion")}")
+tasks{
+
+    withType<KotlinCompile> {
+        kotlinOptions {
+            freeCompilerArgs += "-Xjsr305=strict"
+            jvmTarget = javaVersion.toString()
+        }
     }
+
+    withType<Test> {
+        useJUnitPlatform()
+    }
+
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xjsr305=strict"
-        jvmTarget = "17"
-    }
-}
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}

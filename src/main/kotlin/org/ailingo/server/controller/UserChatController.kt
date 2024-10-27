@@ -3,11 +3,10 @@ package org.ailingo.server.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
-import org.ailingo.server.chat_history.ChatHistoryEntity
+import org.ailingo.server.entity.ChatHistoryEntity
 import org.ailingo.server.model.Status
 import org.ailingo.server.service.user.UserService
 import org.springframework.web.bind.annotation.*
-import java.util.*
 
 
 @Tag(name = "История чата с Chat GPT")

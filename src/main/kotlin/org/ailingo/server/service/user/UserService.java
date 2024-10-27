@@ -1,12 +1,12 @@
 package org.ailingo.server.service.user;
 
 
-import org.ailingo.server.chat_history.ChatHistoryEntity;
+import org.ailingo.server.entity.ChatHistoryEntity;
 import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.model.UserDto;
-import org.ailingo.server.topics.TopicEntity;
+import org.ailingo.server.entity.TopicEntity;
 
 import java.util.*;
 

@@ -4,10 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.ailingo.server.chat_history.ChatHistoryEntity;
+import org.ailingo.server.entity.ChatHistoryEntity;
 import org.ailingo.server.entity.BaseEntity;
 import org.ailingo.server.model.RegisterUserDto;
-import org.ailingo.server.saved_topics.SavedTopicsEntity;
+import org.ailingo.server.entity.SavedTopicsEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;

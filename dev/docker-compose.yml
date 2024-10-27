@@ -15,7 +15,7 @@ services:
 
   backend-prod: &backend
     build:
-      context: .
+      context: ..
     depends_on:
       - db
     container_name: ailingo

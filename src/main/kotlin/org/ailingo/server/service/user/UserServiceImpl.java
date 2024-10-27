@@ -2,15 +2,15 @@ package org.ailingo.server.service.user;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.ailingo.server.chat_history.ChatHistoryEntity;
+import org.ailingo.server.entity.ChatHistoryEntity;
 import org.ailingo.server.entity.user.UserEntity;
 import org.ailingo.server.model.RegisterUserDto;
 import org.ailingo.server.model.Status;
 import org.ailingo.server.model.UserDto;
-import org.ailingo.server.saved_topics.SavedTopicsEntity;
+import org.ailingo.server.entity.SavedTopicsEntity;
 import org.ailingo.server.service.EmailService;
 import org.ailingo.server.service.ValuesService;
-import org.ailingo.server.topics.TopicEntity;
+import org.ailingo.server.entity.TopicEntity;
 import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

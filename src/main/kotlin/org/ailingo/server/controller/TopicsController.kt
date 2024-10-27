@@ -2,8 +2,8 @@ package org.ailingo.server.controller
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.ailingo.server.topics.TopicEntity
-import org.ailingo.server.topics.TopicRepository
+import org.ailingo.server.entity.TopicEntity
+import org.ailingo.server.repositories.TopicRepository
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*

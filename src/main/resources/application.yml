@@ -12,14 +12,17 @@ server:
     protocol: ws
 
 spring:
-  datasource:
-    url: jdbc:h2:file:/data/demo
-    username: sa
-    password: password
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    hikari:
+      auto-commit: false
+      connection-test-query: SELECT 1
+    url: jdbc:postgresql://localhost:5432/lingo
+    username: lingo
+    password: lingo
 
   mail:
     host: mail.artux.net
