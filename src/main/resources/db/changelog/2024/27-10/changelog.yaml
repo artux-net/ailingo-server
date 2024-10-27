@@ -1,6 +1,7 @@
 databaseChangeLog:
   - changeSet:
       author: m.prygunov
+      comment: "Init db, create first tables"
       objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
       id: 1
       changes:

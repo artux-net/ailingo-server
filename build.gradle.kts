@@ -45,6 +45,7 @@ dependencies {
 
     // PostgreSQL
     runtimeOnly("org.postgresql:postgresql")
+    implementation("org.liquibase:liquibase-core")
 
     // ChatGPT
     implementation("com.lilittlecat:chatgpt:1.0.3")
