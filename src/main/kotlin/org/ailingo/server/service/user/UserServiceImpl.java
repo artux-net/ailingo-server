@@ -48,6 +48,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
+        Set<String> allowedEmails = Set.of(
+                "vangelnum@gmail.com",
+                "q2w34132@gmail.com",
+                "laiven937@mail.ru",
+                "maks02_10@mail.ru",
+                "ariefymchenco@gmail.com"
+        );
+
+        String email = newUser.getEmail().toLowerCase();
+        if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
+            return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
+        }
+
         Status status = userValidator.checkUser(newUser);
         if (!status.isSuccess())
             return status;
