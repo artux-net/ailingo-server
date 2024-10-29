@@ -8,5 +8,7 @@ services:
     environment:
       - POSTGRES_USER=lingo
       - POSTGRES_PASSWORD=lingo
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
