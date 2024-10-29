@@ -1,0 +1,14 @@
+name: ailingo-local
+
+services:
+  db:
+    image: postgres:16
+    container_name: ailingo_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=lingo
+      - POSTGRES_PASSWORD=lingo
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
