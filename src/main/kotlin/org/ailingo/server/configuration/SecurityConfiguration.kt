@@ -45,7 +45,7 @@ class SecurityConfiguration {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("*") //  Или конкретные origins, например: listOf("https://localhost:8080")
+        configuration.allowedOrigins = listOf("ailingos.github.io", "*.artux.net, localhost") //  Или конкретные origins, например: listOf("https://localhost:8080")
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS") // Разрешенные методы
         configuration.allowedHeaders = listOf("*") // Разрешенные заголовки
         val source = UrlBasedCorsConfigurationSource()
