@@ -1,6 +1,3 @@
-chat:
-  token: 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
-
 server:
   servlet:
     context-path: /ailingo
@@ -12,25 +9,14 @@ server:
     protocol: ws
 
 spring:
-  datasource:
-    url: jdbc:h2:file:/data/demo
-    username: sa
-    password: password
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
-
-  mail:
-    host: mail.artux.net
-    password: Lvwk7XsCUlbu3UBf
-    port: 587
-    properties:
-      mail:
-        smtp:
-          auth: true
-    protocol: smtp
-    username: noreply@artux.net
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lingo
+    username: lingo
+    password: lingo
+    hikari:
+      auto-commit: false
   boot:
     admin:
       client:
@@ -41,6 +27,3 @@ spring:
 registration:
   confirmation:
     enabled: false
-jwt:
-  secret:
-    key: secret
