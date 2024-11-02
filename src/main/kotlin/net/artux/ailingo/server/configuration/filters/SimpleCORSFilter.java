@@ -1,4 +1,4 @@
-package org.ailingo.server.configuration.Filters;
+package net.artux.ailingo.server.configuration.filters;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletResponse;
