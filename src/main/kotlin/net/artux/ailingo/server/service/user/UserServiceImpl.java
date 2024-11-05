@@ -20,10 +20,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -55,7 +63,14 @@ public class UserServiceImpl implements UserService {
         if (newUser == null) {
             return new Status(false, "Данные пользователя не могут быть пустыми.");
         }
-        String email = newUser.getEmail().toLowerCase();
+
+        String email = newUser.getEmail();
+
+        if (email == null || email.isEmpty()) {
+            return new Status(false, "Email не может быть пустым.");
+        }
+
+        email = newUser.getEmail().toLowerCase();
 
         Set<String> allowedEmails = registrationConfig.getAllowedEmails();
 
