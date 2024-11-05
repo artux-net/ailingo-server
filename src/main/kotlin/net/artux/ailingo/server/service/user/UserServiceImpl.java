@@ -2,6 +2,7 @@ package net.artux.ailingo.server.service.user;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import net.artux.ailingo.server.configuration.RegistrationConfig;
 import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
@@ -18,6 +19,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+
 
 import java.time.Instant;
 import java.util.*;
@@ -38,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
     private final RandomString randomString = new RandomString();
+    private final RegistrationConfig registrationConfig;
 
     @PostConstruct
     public void init() {
@@ -48,6 +52,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
+        if (newUser == null) {
+            return new Status(false, "Данные пользователя не могут быть пустыми.");
+        }
+        String email = newUser.getEmail().toLowerCase();
+
+        Set<String> allowedEmails = registrationConfig.getAllowedEmails();
+
+        if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
+            return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
+        }
+
         Status status = userValidator.checkUser(newUser);
         if (!status.isSuccess())
             return status;
