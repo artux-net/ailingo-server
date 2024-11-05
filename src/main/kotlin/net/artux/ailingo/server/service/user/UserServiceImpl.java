@@ -50,9 +50,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
-        String email = Optional.ofNullable(newUser.getEmail())
-                .map(String::toLowerCase)
-                .orElse(null);
+        String email = newUser.getEmail() != null ? newUser.getEmail().toLowerCase() : null;
 
         if (email == null) {
             return new Status(false, "Адрес электронной почты не может быть пустым.");
