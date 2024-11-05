@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -162,6 +163,10 @@ public class UserServiceImpl implements UserService {
         savedTopicsEntity.setUser(currentUser);
         savedTopicsEntity.setSavedTopics(topics);
         currentUser.getSavedTopics().add(savedTopicsEntity);
+        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
+        if(currentUser.getLastSession().isBefore(yesterday)) {
+            currentUser.setStreak(0);
+        }else currentUser.setStreak(currentUser.getStreak() + 1);
         userRepository.save(currentUser);
     }
 
