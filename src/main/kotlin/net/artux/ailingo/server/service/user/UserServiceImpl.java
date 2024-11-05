@@ -1,17 +1,18 @@
-package net.artux.ailingo.server.service.user;
+package org.ailingo.server.service.user;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.entity.ChatHistoryEntity;
-import net.artux.ailingo.server.entity.user.UserEntity;
-import net.artux.ailingo.server.model.RegisterUserDto;
-import net.artux.ailingo.server.model.Status;
-import net.artux.ailingo.server.model.UserDto;
-import net.artux.ailingo.server.entity.SavedTopicsEntity;
-import net.artux.ailingo.server.service.EmailService;
-import net.artux.ailingo.server.service.ValuesService;
-import net.artux.ailingo.server.entity.TopicEntity;
-import net.artux.ailingo.server.util.RandomString;
+import org.ailingo.server.chat_history.ChatHistoryEntity;
+import org.ailingo.server.configuration.RegistrationConfig;
+import org.ailingo.server.entity.user.UserEntity;
+import org.ailingo.server.model.RegisterUserDto;
+import org.ailingo.server.model.Status;
+import org.ailingo.server.model.UserDto;
+import org.ailingo.server.saved_topics.SavedTopicsEntity;
+import org.ailingo.server.service.EmailService;
+import org.ailingo.server.service.ValuesService;
+import org.ailingo.server.topics.TopicEntity;
+import org.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final ValuesService valuesService;
     private final UserValidator userValidator;
     private final PasswordEncoder passwordEncoder;
+    private final RegistrationConfig registrationConfig;
 
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
@@ -48,15 +50,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
-        Set<String> allowedEmails = Set.of(
-                "vangelnum@gmail.com",
-                "q2w34132@gmail.com",
-                "laiven937@mail.ru",
-                "maks02_10@mail.ru",
-                "ariefymchenco@gmail.com"
-        );
+        String email = Optional.ofNullable(newUser.getEmail())
+                .map(String::toLowerCase)
+                .orElse(null);
 
-        String email = newUser.getEmail().toLowerCase();
+        if (email == null) {
+            return new Status(false, "Адрес электронной почты не может быть пустым.");
+        }
+
+        Set<String> allowedEmails = registrationConfig.getAllowedEmails();
+
         if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
             return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
         }
