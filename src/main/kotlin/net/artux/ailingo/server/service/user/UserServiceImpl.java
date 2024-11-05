@@ -50,11 +50,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
-        String email = newUser.getEmail() != null ? newUser.getEmail().toLowerCase() : null;
-
-        if (email == null) {
-            return new Status(false, "Адрес электронной почты не может быть пустым.");
+        if (newUser == null) {
+            return new Status(false, "Данные пользователя не могут быть пустыми.");
         }
+        String email = newUser.getEmail().toLowerCase();
 
         Set<String> allowedEmails = registrationConfig.getAllowedEmails();
 
