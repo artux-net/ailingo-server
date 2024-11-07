@@ -2,6 +2,7 @@ package net.artux.ailingo.server.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import net.artux.ailingo.server.configuration.RegistrationConfig;
 import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
@@ -21,7 +22,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -39,6 +50,7 @@ public class UserServiceImpl implements UserService {
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
     private final RandomString randomString = new RandomString();
+    private final RegistrationConfig registrationConfig;
 
     @PostConstruct
     public void init() {
@@ -49,6 +61,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
+        if (newUser == null) {
+            return new Status(false, "Данные пользователя не могут быть пустыми.");
+        }
+
+        String email = newUser.getEmail();
+
+        if (email == null || email.isEmpty()) {
+            return new Status(false, "Email не может быть пустым.");
+        }
+
+        email = newUser.getEmail().toLowerCase();
+
+        Set<String> allowedEmails = registrationConfig.getAllowedEmails();
+
+        if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
+            return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
+        }
+
         Status status = userValidator.checkUser(newUser);
         if (!status.isSuccess())
             return status;
