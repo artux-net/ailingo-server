@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.service.user.reset;
+package net.artux.ailingo.server.service;
 
 
 import net.artux.ailingo.server.model.Status;

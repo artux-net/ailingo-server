@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.service.user;
+package net.artux.ailingo.server.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -8,8 +8,9 @@ import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
 import net.artux.ailingo.server.model.UserDto;
 import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.repositories.UserRepository;
 import net.artux.ailingo.server.service.EmailService;
-import net.artux.ailingo.server.service.ValuesService;
+import net.artux.ailingo.server.service.UserService;
 import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;

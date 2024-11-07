@@ -1,8 +1,9 @@
-package net.artux.ailingo.server.service;
+package net.artux.ailingo.server.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
+import net.artux.ailingo.server.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;

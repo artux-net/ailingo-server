@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.ChatUpdate;
 import net.artux.ailingo.server.model.MessageDTO;
-import net.artux.ailingo.server.service.user.UserService;
+import net.artux.ailingo.server.service.UserService;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 

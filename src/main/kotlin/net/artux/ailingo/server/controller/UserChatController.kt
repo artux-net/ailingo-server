@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
 import net.artux.ailingo.server.entity.ChatHistoryEntity
 import net.artux.ailingo.server.model.Status
-import net.artux.ailingo.server.service.user.UserService
+import net.artux.ailingo.server.service.UserService
 import org.springframework.web.bind.annotation.*
 
 
