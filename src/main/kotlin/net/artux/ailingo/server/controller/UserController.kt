@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor
 import net.artux.ailingo.server.model.RegisterUserDto
 import net.artux.ailingo.server.model.Status
 import net.artux.ailingo.server.model.UserDto
-import net.artux.ailingo.server.service.user.UserService
-import net.artux.ailingo.server.service.user.reset.ResetService
+import net.artux.ailingo.server.service.UserService
+import net.artux.ailingo.server.service.ResetService
 import org.springframework.web.bind.annotation.*
 
 

@@ -7,7 +7,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
 import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.service.ValuesService;
+import net.artux.ailingo.server.service.impl.ValuesService;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,7 +33,6 @@ public class SwaggerConfig {
     @Bean
     public GroupedOpenApi restApi() {
         return GroupedOpenApi.builder()
-                .packagesToScan("org.ailingo.server.controller")
                 .displayName("api")
                 .group("rest")
                 .pathsToMatch("/api/v1/**")

@@ -5,17 +5,18 @@ repositories {
 }
 
 plugins {
-    val kotlinVersion = "1.9.21"
+    id("org.springframework.boot") version "3.3.2"
+    id("io.spring.dependency-management") version "1.1.4"
+
+    val kotlinVersion = "1.9.22"
     kotlin("kapt") version kotlinVersion
-    kotlin("jvm") version kotlinVersion
-    kotlin("plugin.spring") version kotlinVersion
-    kotlin("plugin.jpa") version kotlinVersion
+    kotlin("jvm") version "1.9.22"
+    kotlin("plugin.spring") version "1.9.22"
+    kotlin("plugin.jpa") version "1.9.22"
     kotlin("plugin.lombok") version kotlinVersion
 
     id("java")
     id("io.freefair.lombok") version "8.1.0"
-    id("org.springframework.boot") version "3.3.2"
-    id("io.spring.dependency-management") version "1.1.3"
 }
 
 group = "org.ailingo"
@@ -34,10 +35,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
-    // temp
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")

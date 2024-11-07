@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.service.user;
+package net.artux.ailingo.server.service;
 
 
 import net.artux.ailingo.server.entity.ChatHistoryEntity;

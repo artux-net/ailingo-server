@@ -1,8 +1,9 @@
-package net.artux.ailingo.server.service.user;
+package net.artux.ailingo.server.service;
 
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.SecurityUser;
+import net.artux.ailingo.server.repositories.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.User;

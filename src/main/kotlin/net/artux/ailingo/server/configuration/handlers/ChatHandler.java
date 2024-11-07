@@ -1,7 +1,7 @@
 package net.artux.ailingo.server.configuration.handlers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.artux.ailingo.server.service.user.UserService;
+import net.artux.ailingo.server.service.UserService;
 import org.springframework.stereotype.Service;
 
 @Service
