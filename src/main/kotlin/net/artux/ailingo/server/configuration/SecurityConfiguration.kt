@@ -30,7 +30,6 @@ class SecurityConfiguration {
                 it.requestMatchers(*WHITE_LIST).permitAll()
                     .anyRequest().authenticated()
             }
-            // .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
             .httpBasic(Customizer.withDefaults())
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
             .build()
