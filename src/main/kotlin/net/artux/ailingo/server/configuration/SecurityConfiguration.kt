@@ -11,10 +11,6 @@ import org.springframework.security.config.annotation.web.configurers.FormLoginC
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource
-
 
 @Configuration
 @EnableWebSecurity
@@ -24,9 +20,7 @@ class SecurityConfiguration {
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         return http.csrf { obj: CsrfConfigurer<HttpSecurity> -> obj.disable() }
-            .cors {
-                it.configurationSource(corsConfigurationSource())
-            }
+            .cors(Customizer.withDefaults())
             .headers { headers ->
                 headers.frameOptions { frameOptions ->
                     frameOptions.disable()
@@ -36,21 +30,10 @@ class SecurityConfiguration {
                 it.requestMatchers(*WHITE_LIST).permitAll()
                     .anyRequest().authenticated()
             }
-           // .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
+            // .oauth2ResourceServer { obj: OAuth2ResourceServerConfigurer<HttpSecurity> -> obj.jwt(Customizer.withDefaults()) }
             .httpBasic(Customizer.withDefaults())
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
             .build()
-    }
-
-    @Bean
-    fun corsConfigurationSource(): CorsConfigurationSource {
-        val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("ailingos.github.io", "*.artux.net, localhost") //  Или конкретные origins, например: listOf("https://localhost:8080")
-        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS") // Разрешенные методы
-        configuration.allowedHeaders = listOf("*") // Разрешенные заголовки
-        val source = UrlBasedCorsConfigurationSource()
-        source.registerCorsConfiguration("/**", configuration) // Применяем конфигурацию ко всем endpoint'ам
-        return source
     }
 
     companion object {
