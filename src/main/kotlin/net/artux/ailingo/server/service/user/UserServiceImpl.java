@@ -50,8 +50,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Status registerUser(RegisterUserDto newUser) {
         Status status = userValidator.checkUser(newUser);
-        if (!status.isSuccess())
-            return status;
+        if (!status.isSuccess()) return status;
 
         if (registerUserMap.containsValue(newUser))
             return new Status(false, "Пользователь ожидает регистрации, проверьте почту.");
@@ -91,14 +90,12 @@ public class UserServiceImpl implements UserService {
             RegisterUserDto regDto = registerUserMap.get(token);
             Status currentStatus = userValidator.checkUser(regDto);
             registerUserMap.remove(token);
-            if (!currentStatus.isSuccess())
-                return currentStatus;
+            if (!currentStatus.isSuccess()) return currentStatus;
 
             UserEntity member = saveUser(regDto);
             logger.info("Пользователь {} ({}) зарегистрирован.", member.getLogin(), member.getName());
             try {
-                if (valuesService.isEmailConfirmationEnabled())
-                    emailService.sendRegisterLetter(regDto);
+                if (valuesService.isEmailConfirmationEnabled()) emailService.sendRegisterLetter(regDto);
                 return new Status(true, "Мы вас зарегистрировали, спасибо!");
             } catch (Exception e) {
                 logger.error("Handle confirmation", e);
@@ -133,6 +130,7 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserDto() {
         return dto(getCurrentUser());
     }
+
     @Override
     public Optional<UserEntity> getUserByEmail(String email) {
         return userRepository.findMemberByEmail(email);
@@ -144,9 +142,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public static UserDto dto(UserEntity userEntity) {
-        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(),userEntity.getEmail(), userEntity.getAvatar(),
-                userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
-                userEntity.getRegistration(), userEntity.getLastLoginAt());
+        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(), userEntity.getEmail(), userEntity.getAvatar(), userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(), userEntity.getRegistration(), userEntity.getLastLoginAt());
     }
 
     @Override
@@ -156,6 +152,7 @@ public class UserServiceImpl implements UserService {
         currentUser.getSavedTopics().forEach(savedTopicsEntity -> savedTopics.addAll(savedTopicsEntity.getSavedTopics()));
         return savedTopics;
     }
+
     @Override
     public void saveUserTopics(Set<TopicEntity> topics) {
         UserEntity currentUser = getCurrentUser();
@@ -163,10 +160,15 @@ public class UserServiceImpl implements UserService {
         savedTopicsEntity.setUser(currentUser);
         savedTopicsEntity.setSavedTopics(topics);
         currentUser.getSavedTopics().add(savedTopicsEntity);
-        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
-        if(currentUser.getLastSession().isBefore(yesterday)) {
-            currentUser.setStreak(0);
-        }else currentUser.setStreak(currentUser.getStreak() + 1);
+        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
+            if (currentUser.getLastStrikeAt().isBefore(yesterday)) {
+                currentUser.setStreak(0);
+            } else {
+                if (currentUser.getLastStrikeAt().truncatedTo(ChronoUnit.DAYS)!=Instant.now().truncatedTo(ChronoUnit.DAYS)) {
+                    currentUser.setStreak(currentUser.getStreak() + 1);
+                    currentUser.setLastStrikeAt(Instant.now());
+                }
+            }
         userRepository.save(currentUser);
     }
 

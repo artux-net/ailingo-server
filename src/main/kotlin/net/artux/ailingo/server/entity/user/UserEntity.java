@@ -42,7 +42,7 @@ public class UserEntity extends BaseEntity {
 
     private Instant registration;
     private Instant lastLoginAt;
-    private Instant lastSession;
+    private Instant lastStrikeAt;
 
     public UserEntity(RegisterUserDto registerUser, PasswordEncoder passwordEncoder) {
         login = registerUser.getLogin();
