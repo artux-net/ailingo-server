@@ -160,15 +160,22 @@ public class UserServiceImpl implements UserService {
         savedTopicsEntity.setUser(currentUser);
         savedTopicsEntity.setSavedTopics(topics);
         currentUser.getSavedTopics().add(savedTopicsEntity);
+        userRepository.save(currentUser);
+    }
+
+    public void changeUserStreak() {
         Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
-            if (currentUser.getLastStrikeAt().isBefore(yesterday)) {
-                currentUser.setStreak(0);
-            } else {
-                if (currentUser.getLastStrikeAt().truncatedTo(ChronoUnit.DAYS)!=Instant.now().truncatedTo(ChronoUnit.DAYS)) {
-                    currentUser.setStreak(currentUser.getStreak() + 1);
-                    currentUser.setLastStrikeAt(Instant.now());
-                }
+        Instant today = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        UserEntity currentUser = getCurrentUser();
+        Instant lastStrikeAt = currentUser.getLastSession().truncatedTo(ChronoUnit.DAYS);
+        if (lastStrikeAt.isBefore(yesterday)) {
+            currentUser.setStreak(0);
+        } else {
+            if (lastStrikeAt != today) {
+                currentUser.setStreak(currentUser.getStreak() + 1);
+                currentUser.setLastSession(today);
             }
+        }
         userRepository.save(currentUser);
     }
 
