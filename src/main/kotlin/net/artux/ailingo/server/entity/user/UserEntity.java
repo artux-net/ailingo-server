@@ -8,20 +8,20 @@ import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.BaseEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @NoArgsConstructor
 @Getter
 @Setter
 @Entity
 @Table(name = "app_user")
-public class UserEntity extends BaseEntity {
+public class UserEntity extends BaseEntity implements UserDetails {
 
     @Column(unique = true)
     private String login;
@@ -43,6 +43,9 @@ public class UserEntity extends BaseEntity {
     private Instant registration;
     private Instant lastLoginAt;
     private Instant lastSession;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     public UserEntity(RegisterUserDto registerUser, PasswordEncoder passwordEncoder) {
         login = registerUser.getLogin();
@@ -73,5 +76,35 @@ public class UserEntity extends BaseEntity {
 
     public void removeCoins(int amount) {
         this.coins -= amount;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return login;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

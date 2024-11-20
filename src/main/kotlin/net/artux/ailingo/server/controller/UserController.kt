@@ -3,11 +3,10 @@ package net.artux.ailingo.server.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
-import net.artux.ailingo.server.model.RegisterUserDto
-import net.artux.ailingo.server.model.Status
-import net.artux.ailingo.server.model.UserDto
-import net.artux.ailingo.server.service.UserService
+import net.artux.ailingo.server.model.*
 import net.artux.ailingo.server.service.ResetService
+import net.artux.ailingo.server.service.UserService
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 
@@ -22,8 +21,16 @@ class UserController(
 ) {
     @Operation(summary = "Регистрация")
     @PostMapping("/register")
-    fun registerUser(@RequestBody registerUser: RegisterUserDto?): Status {
+    fun registerUser(@RequestBody registerUser: RegisterUserDto?): AuthResponse {
         return userService.registerUser(registerUser)
+    }
+
+    @Operation(summary = "Авторизация")
+    @PostMapping("/login")
+    fun authenticate(
+        @RequestBody request: AuthRequest?
+    ): ResponseEntity<AuthResponse> {
+        return ResponseEntity.ok(userService.authenticate(request))
     }
 
     @Operation(summary = "Основная информация")

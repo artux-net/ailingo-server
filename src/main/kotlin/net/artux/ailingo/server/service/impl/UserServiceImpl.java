@@ -4,19 +4,23 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.configuration.RegistrationConfig;
 import net.artux.ailingo.server.entity.ChatHistoryEntity;
+import net.artux.ailingo.server.entity.user.Role;
 import net.artux.ailingo.server.entity.user.UserEntity;
-import net.artux.ailingo.server.model.RegisterUserDto;
-import net.artux.ailingo.server.model.Status;
-import net.artux.ailingo.server.model.UserDto;
+import net.artux.ailingo.server.model.*;
 import net.artux.ailingo.server.entity.SavedTopicsEntity;
 import net.artux.ailingo.server.repositories.UserRepository;
 import net.artux.ailingo.server.service.EmailService;
 import net.artux.ailingo.server.service.UserService;
 import net.artux.ailingo.server.entity.TopicEntity;
+import net.artux.ailingo.server.configuration.security.JwtUtil;
 import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +49,11 @@ public class UserServiceImpl implements UserService {
     private final EmailService emailService;
     private final ValuesService valuesService;
     private final UserValidator userValidator;
+
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
 
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
@@ -60,46 +68,45 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Status registerUser(RegisterUserDto newUser) {
+    public AuthResponse registerUser(RegisterUserDto newUser) {
         if (newUser == null) {
-            return new Status(false, "Данные пользователя не могут быть пустыми.");
+            throw new IllegalArgumentException("Данные пользователя не могут быть пустыми.");
         }
 
-        String email = newUser.getEmail();
-
-        if (email == null || email.isEmpty()) {
-            return new Status(false, "Email не может быть пустым.");
-        }
-
-        email = newUser.getEmail().toLowerCase();
+        String email = newUser.getEmail().toLowerCase();
 
         Set<String> allowedEmails = registrationConfig.getAllowedEmails();
-
         if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
-            return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
+            throw new IllegalArgumentException("Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
         }
 
         Status status = userValidator.checkUser(newUser);
-        if (!status.isSuccess())
-            return status;
-
-        if (registerUserMap.containsValue(newUser))
-            return new Status(false, "Пользователь ожидает регистрации, проверьте почту.");
-
-        try {
-            String token = generateToken(newUser);
-            if (valuesService.isEmailConfirmationEnabled()) {
-                emailService.sendConfirmLetter(newUser, token);
-                return new Status(true, "Проверьте почту.");
-            } else {
-                handleConfirmation(token);
-                return new Status(true, "Учетная запись зарегистрирована. Выполните вход.");
-            }
-
-        } catch (Exception e) {
-            logger.error("Registration", e);
-            return new Status(false, "Не удалось отправить письмо на " + newUser.getEmail());
+        if (!status.isSuccess()) {
+            throw new IllegalArgumentException(status.getDescription());
         }
+
+        UserEntity userEntity = saveUser(newUser);
+        String jwtToken = generateToken(userEntity.getLogin());
+
+        logger.info("Пользователь {} ({}) зарегистрирован.", userEntity.getLogin(), userEntity.getName());
+
+        return new AuthResponse(jwtToken); // Return AuthResponse with JWT
+    }
+
+    @Override
+    public AuthResponse authenticate(AuthRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getLogin(), request.getPassword())
+        );
+        var user = userRepository.findByLogin(request.getLogin()).orElseThrow();
+        var jwtToken = jwtUtil.generateToken(user);
+        return new AuthResponse(jwtToken);
+    }
+
+    @Override
+    public String generateToken(String username) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        return jwtUtil.generateToken(userDetails);
     }
 
     private String generateToken(RegisterUserDto user) {
@@ -138,7 +145,9 @@ public class UserServiceImpl implements UserService {
     }
 
     public UserEntity saveUser(RegisterUserDto registerUserDto) {
-        return userRepository.save(new UserEntity(registerUserDto, passwordEncoder));
+        UserEntity userEntity = new UserEntity(registerUserDto, passwordEncoder);
+        userEntity.setRole(Role.USER);
+        return userRepository.save(userEntity);
     }
 
     @Override

@@ -16,11 +16,6 @@ import java.util.List;
 
 @Configuration
 @SecurityScheme(
-        name = "basicAuth",
-        type = SecuritySchemeType.HTTP,
-        scheme = "basic"
-)
-@SecurityScheme(
         name = "bearerAuth",
         type = SecuritySchemeType.HTTP,
         scheme = "bearer"
@@ -51,7 +46,6 @@ public class SwaggerConfig {
                         .version("0.1")
                         .license(null)
                 )
-                .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }
 
