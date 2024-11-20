@@ -33,3 +33,6 @@ registration:
     - laiven937@mail.ru
     - maks02_10@mail.ru
     - ariefymchenco@gmail.com
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
