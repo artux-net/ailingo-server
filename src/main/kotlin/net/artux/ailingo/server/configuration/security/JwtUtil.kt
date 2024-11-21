@@ -10,7 +10,6 @@ import net.artux.ailingo.server.entity.RefreshTokenEntity
 import net.artux.ailingo.server.entity.user.UserEntity
 import net.artux.ailingo.server.repositories.RefreshTokenRepository
 import net.artux.ailingo.server.repositories.UserRepository
-import net.artux.ailingo.server.service.impl.ValuesService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -25,7 +24,7 @@ import java.util.*
 class JwtUtil(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
-    private val valuesService: ValuesService,
+    @Value("\${jwt.secret}") private val secretKey: String,
     @Value("\${jwt.expiration}") private val jwtExpiration: Long,
     @Value("\${jwt.refresh-token.expiration}") private val refreshTokenExpiration: Long
 ) {
@@ -131,7 +130,7 @@ class JwtUtil(
     }
 
     private fun getSignInKey(): Key {
-        val keyBytes = Decoders.BASE64.decode(valuesService.jwtSecret)
+        val keyBytes = Decoders.BASE64.decode(secretKey)
         return Keys.hmacShaKeyFor(keyBytes)
     }
 }
