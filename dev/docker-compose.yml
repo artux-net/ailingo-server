@@ -24,6 +24,7 @@ services:
       - prod
     environment:
       - CHAT_TOKEN=${CHAT_TOKEN}
+      - JWT_SECRET=${JWT_SECRET}
       - SERVER_HOST=${SERVER_HOST}
       - SERVER_PROTOCOL=${SERVER_PROTOCOL}
       - SERVER_WEBSOCKET_PROTOCOL=${SERVER_WEBSOCKET_PROTOCOL}
@@ -31,7 +32,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ailingo
       - SPRING_DATASOURCE_USERNAME=ailingo
       - SPRING_DATASOURCE_PASSWORD=&1Te3O6zHnD9
-      - JWT_SECRET=${JWT_SECRET}
     ports:
       - "11001:8080"
 
