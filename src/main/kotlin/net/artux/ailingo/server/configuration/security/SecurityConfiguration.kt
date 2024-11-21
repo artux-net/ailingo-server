@@ -40,6 +40,7 @@ class SecurityConfiguration {
         private val WHITE_LIST = arrayOf(
             "/api/v1/user/login",
             "/api/v1/user/register",
+            "/api/v1/user/refresh-token",
             "/api/v1/user/reset/pass",
             "/api/v1/token",
             "/confirmation/register",

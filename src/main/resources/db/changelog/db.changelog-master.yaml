@@ -1,4 +1,10 @@
 databaseChangeLog:
-  - includeAll:
-      path: /2024
+  - include:
+      file: 2024/27-10/init.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 2024/20-11/add_role_column.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 2024/21-11/refresh_token_table.sql
       relativeToChangelogFile: true

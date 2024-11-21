@@ -3,40 +3,36 @@ package net.artux.ailingo.server.service.impl;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.configuration.RegistrationConfig;
+import net.artux.ailingo.server.configuration.security.JwtUtil;
 import net.artux.ailingo.server.entity.ChatHistoryEntity;
+import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.entity.user.Role;
 import net.artux.ailingo.server.entity.user.UserEntity;
-import net.artux.ailingo.server.model.*;
-import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.model.RegisterUserDto;
+import net.artux.ailingo.server.model.Status;
+import net.artux.ailingo.server.model.UserDto;
+import net.artux.ailingo.server.model.login.LoginRequest;
+import net.artux.ailingo.server.model.login.LoginResponse;
+import net.artux.ailingo.server.model.refreshtoken.RefreshTokenRequest;
+import net.artux.ailingo.server.model.refreshtoken.RefreshTokenResponse;
+import net.artux.ailingo.server.model.register.RegisterResponse;
 import net.artux.ailingo.server.repositories.UserRepository;
 import net.artux.ailingo.server.service.EmailService;
 import net.artux.ailingo.server.service.UserService;
-import net.artux.ailingo.server.entity.TopicEntity;
-import net.artux.ailingo.server.configuration.security.JwtUtil;
 import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Transactional
@@ -68,7 +64,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AuthResponse registerUser(RegisterUserDto newUser) {
+    public RegisterResponse registerUser(RegisterUserDto newUser) {
         if (newUser == null) {
             throw new IllegalArgumentException("Данные пользователя не могут быть пустыми.");
         }
@@ -86,62 +82,36 @@ public class UserServiceImpl implements UserService {
         }
 
         UserEntity userEntity = saveUser(newUser);
-        String jwtToken = generateToken(userEntity.getLogin());
+        String jwtToken = jwtUtil.generateToken(userEntity);
+        String refreshToken = jwtUtil.generateRefreshToken(userEntity);
 
         logger.info("Пользователь {} ({}) зарегистрирован.", userEntity.getLogin(), userEntity.getName());
 
-        return new AuthResponse(jwtToken); // Return AuthResponse with JWT
+        return new RegisterResponse(jwtToken, refreshToken, dto(userEntity));
     }
 
     @Override
-    public AuthResponse authenticate(AuthRequest request) {
+    public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getLogin(), request.getPassword())
         );
         var user = userRepository.findByLogin(request.getLogin()).orElseThrow();
-        var jwtToken = jwtUtil.generateToken(user);
-        return new AuthResponse(jwtToken);
+
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
+
+        return new LoginResponse(accessToken, refreshToken, dto(user));
     }
 
     @Override
-    public String generateToken(String username) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        return jwtUtil.generateToken(userDetails);
-    }
+    public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        String accessToken = jwtUtil.refreshToken(refreshToken);
 
-    private String generateToken(RegisterUserDto user) {
-        String token = randomString.nextString();
-        logger.info("Пользователь {} добавлен в лист ожидания регистрации с токеном {}, токен возможно использовать через сваггер.", user.getEmail(), token);
-        logger.info("Ссылка подтверждения аккаунта: " + valuesService.getAddress() + "/confirmation/register?t=" + token);
-        registerUserMap.put(token, user);
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                registerUserMap.remove(token);
-            }
-        }, 10 * 60 * 1000);
-        return token;
-    }
-
-    public Status handleConfirmation(String token) {
-        if (registerUserMap.containsKey(token)) {
-            RegisterUserDto regDto = registerUserMap.get(token);
-            Status currentStatus = userValidator.checkUser(regDto);
-            registerUserMap.remove(token);
-            if (!currentStatus.isSuccess())
-                return currentStatus;
-
-            UserEntity member = saveUser(regDto);
-            logger.info("Пользователь {} ({}) зарегистрирован.", member.getLogin(), member.getName());
-            try {
-                if (valuesService.isEmailConfirmationEnabled())
-                    emailService.sendRegisterLetter(regDto);
-                return new Status(true, "Мы вас зарегистрировали, спасибо!");
-            } catch (Exception e) {
-                logger.error("Handle confirmation", e);
-                return new Status(true, "Не получилось отправить подтверждение на почту, но мы вас зарегистрировали, спасибо!");
-            }
-        } else return new Status(false, "Ссылка устарела или не существует");
+        if (accessToken == null) {
+            throw new IllegalArgumentException("Refresh token is invalid or expired.");
+        }
+        return new RefreshTokenResponse(accessToken, refreshToken);
     }
 
     public UserEntity saveUser(RegisterUserDto registerUserDto) {
@@ -172,6 +142,7 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserDto() {
         return dto(getCurrentUser());
     }
+
     @Override
     public Optional<UserEntity> getUserByEmail(String email) {
         return userRepository.findMemberByEmail(email);
@@ -183,7 +154,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public static UserDto dto(UserEntity userEntity) {
-        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(),userEntity.getEmail(), userEntity.getAvatar(),
+        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(), userEntity.getEmail(), userEntity.getAvatar(),
                 userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
                 userEntity.getRegistration(), userEntity.getLastLoginAt());
     }
@@ -195,6 +166,7 @@ public class UserServiceImpl implements UserService {
         currentUser.getSavedTopics().forEach(savedTopicsEntity -> savedTopics.addAll(savedTopicsEntity.getSavedTopics()));
         return savedTopics;
     }
+
     @Override
     public void saveUserTopics(Set<TopicEntity> topics) {
         UserEntity currentUser = getCurrentUser();
