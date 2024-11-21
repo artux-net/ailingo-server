@@ -15,6 +15,10 @@ import org.springframework.stereotype.Service;
 public class ValuesService {
 
     @Getter
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @Getter
     @Value("${chat.token:null}")
     private String chatToken;
 

@@ -24,7 +24,7 @@ import java.util.*
 class JwtUtil(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
-    @Value("\${jwt.secret}") private val secretKey: String,
+    @Value("\${JWT_SECRET}") private val secretKey: String,
     @Value("\${jwt.expiration}") private val jwtExpiration: Long,
     @Value("\${jwt.refresh-token.expiration}") private val refreshTokenExpiration: Long
 ) {
@@ -55,7 +55,7 @@ class JwtUtil(
                 // Проверяем refresh token в базе
                 if (refreshTokenEntity != null && refreshToken == refreshTokenEntity.token && !refreshTokenEntity.isExpired) {
                     val accessToken = generateToken(user)
-                    refreshTokenRepository.delete(refreshTokenEntity);
+                    refreshTokenRepository.delete(refreshTokenEntity)
                     return accessToken
                 }
             }
