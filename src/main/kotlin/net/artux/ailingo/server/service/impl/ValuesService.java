@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class ValuesService {
 
     @Getter
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String jwtSecret;
 
     @Getter
