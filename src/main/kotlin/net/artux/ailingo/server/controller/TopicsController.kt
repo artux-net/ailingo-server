@@ -3,6 +3,7 @@ package net.artux.ailingo.server.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import net.artux.ailingo.server.entity.TopicEntity
+import net.artux.ailingo.server.model.TopicResponseDTO
 import net.artux.ailingo.server.repositories.TopicRepository
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,8 +18,15 @@ class TopicsController(
 ) {
     @Operation(summary = "Получение топиков")
     @GetMapping("/getTopics")
-    fun getResponse(): List<TopicEntity> {
-        return topicRepository.findAll()
+    fun getTopics(): List<TopicResponseDTO> {
+        val imageBaseUrl = "https://github.com/artux-net/ailigo-app/tree/main/composeApp/src/commonMain/composeResources/drawable"
+
+        return topicRepository.findAll().map { topic ->
+            TopicResponseDTO(
+                name = topic.name,
+                imageUrl = "$imageBaseUrl${topic.image}"
+            )
+        }
     }
 
     @Operation(summary = "Добавление нового топика")
