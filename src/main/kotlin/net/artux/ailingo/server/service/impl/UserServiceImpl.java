@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -193,6 +194,22 @@ public class UserServiceImpl implements UserService {
         savedTopicsEntity.setUser(currentUser);
         savedTopicsEntity.setSavedTopics(topics);
         currentUser.getSavedTopics().add(savedTopicsEntity);
+        userRepository.save(currentUser);
+    }
+
+    public void changeUserStreak() {
+        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
+        Instant today = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        UserEntity currentUser = getCurrentUser();
+        Instant lastStrikeAt = currentUser.getLastSession().truncatedTo(ChronoUnit.DAYS);
+        if (lastStrikeAt.isBefore(yesterday)) {
+            currentUser.setStreak(0);
+        } else {
+            if (lastStrikeAt != today) {
+                currentUser.setStreak(currentUser.getStreak() + 1);
+                currentUser.setLastSession(today);
+            }
+        }
         userRepository.save(currentUser);
     }
 
