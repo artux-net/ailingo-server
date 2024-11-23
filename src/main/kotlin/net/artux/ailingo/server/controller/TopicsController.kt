@@ -3,7 +3,6 @@ package net.artux.ailingo.server.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import net.artux.ailingo.server.entity.TopicEntity
-import net.artux.ailingo.server.model.TopicResponseDTO
 import net.artux.ailingo.server.service.TopicService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,8 +17,9 @@ class TopicsController(
 
     @Operation(summary = "Получение топиков")
     @GetMapping("/getTopics")
-    fun getTopics(@RequestParam locale: String): List<TopicResponseDTO> {
-        return topicService.getTopics(locale)
+    fun getTopics(@RequestParam locale: String): ResponseEntity<String> {
+        topicService.getTopics(locale)
+        return ResponseEntity.status(HttpStatus.OK).body("Got Topics")
     }
 
     @Operation(summary = "Добавление нового топика")
