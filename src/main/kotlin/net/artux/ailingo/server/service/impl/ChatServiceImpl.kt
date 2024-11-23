@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.service
+package net.artux.ailingo.server.service.impl
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -8,6 +8,7 @@ import com.lilittlecat.chatgpt.offical.exception.BizException
 import com.lilittlecat.chatgpt.offical.exception.Error
 import jakarta.annotation.PostConstruct
 import lombok.extern.slf4j.Slf4j
+import net.artux.ailingo.server.service.ChatService
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request

@@ -1,15 +1,17 @@
-package net.artux.ailingo.server.service.user;
+package net.artux.ailingo.server.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import net.artux.ailingo.server.configuration.RegistrationConfig;
 import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
 import net.artux.ailingo.server.model.UserDto;
 import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.repositories.UserRepository;
 import net.artux.ailingo.server.service.EmailService;
-import net.artux.ailingo.server.service.ValuesService;
+import net.artux.ailingo.server.service.UserService;
 import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
@@ -20,8 +22,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -39,6 +50,7 @@ public class UserServiceImpl implements UserService {
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
     private final RandomString randomString = new RandomString();
+    private final RegistrationConfig registrationConfig;
 
     @PostConstruct
     public void init() {
@@ -49,8 +61,27 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Status registerUser(RegisterUserDto newUser) {
+        if (newUser == null) {
+            return new Status(false, "Данные пользователя не могут быть пустыми.");
+        }
+
+        String email = newUser.getEmail();
+
+        if (email == null || email.isEmpty()) {
+            return new Status(false, "Email не может быть пустым.");
+        }
+
+        email = newUser.getEmail().toLowerCase();
+
+        Set<String> allowedEmails = registrationConfig.getAllowedEmails();
+
+        if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
+            return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
+        }
+
         Status status = userValidator.checkUser(newUser);
-        if (!status.isSuccess()) return status;
+        if (!status.isSuccess())
+            return status;
 
         if (registerUserMap.containsValue(newUser))
             return new Status(false, "Пользователь ожидает регистрации, проверьте почту.");
@@ -90,12 +121,14 @@ public class UserServiceImpl implements UserService {
             RegisterUserDto regDto = registerUserMap.get(token);
             Status currentStatus = userValidator.checkUser(regDto);
             registerUserMap.remove(token);
-            if (!currentStatus.isSuccess()) return currentStatus;
+            if (!currentStatus.isSuccess())
+                return currentStatus;
 
             UserEntity member = saveUser(regDto);
             logger.info("Пользователь {} ({}) зарегистрирован.", member.getLogin(), member.getName());
             try {
-                if (valuesService.isEmailConfirmationEnabled()) emailService.sendRegisterLetter(regDto);
+                if (valuesService.isEmailConfirmationEnabled())
+                    emailService.sendRegisterLetter(regDto);
                 return new Status(true, "Мы вас зарегистрировали, спасибо!");
             } catch (Exception e) {
                 logger.error("Handle confirmation", e);
@@ -130,7 +163,6 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserDto() {
         return dto(getCurrentUser());
     }
-
     @Override
     public Optional<UserEntity> getUserByEmail(String email) {
         return userRepository.findMemberByEmail(email);
@@ -142,7 +174,9 @@ public class UserServiceImpl implements UserService {
     }
 
     public static UserDto dto(UserEntity userEntity) {
-        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(), userEntity.getEmail(), userEntity.getAvatar(), userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(), userEntity.getRegistration(), userEntity.getLastLoginAt());
+        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(),userEntity.getEmail(), userEntity.getAvatar(),
+                userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
+                userEntity.getRegistration(), userEntity.getLastLoginAt());
     }
 
     @Override
@@ -152,7 +186,6 @@ public class UserServiceImpl implements UserService {
         currentUser.getSavedTopics().forEach(savedTopicsEntity -> savedTopics.addAll(savedTopicsEntity.getSavedTopics()));
         return savedTopics;
     }
-
     @Override
     public void saveUserTopics(Set<TopicEntity> topics) {
         UserEntity currentUser = getCurrentUser();

@@ -27,3 +27,9 @@ spring:
 registration:
   confirmation:
     enabled: false
+  allowed-emails:
+    - vangelnum@gmail.com
+    - q2w34132@gmail.com
+    - laiven937@mail.ru
+    - maks02_10@mail.ru
+    - ariefymchenco@gmail.com

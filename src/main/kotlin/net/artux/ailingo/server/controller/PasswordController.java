@@ -2,7 +2,7 @@ package net.artux.ailingo.server.controller;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.service.user.reset.ResetService;
+import net.artux.ailingo.server.service.ResetService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;

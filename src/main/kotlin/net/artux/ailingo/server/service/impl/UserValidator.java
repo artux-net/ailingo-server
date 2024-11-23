@@ -1,8 +1,9 @@
-package net.artux.ailingo.server.service.user;
+package net.artux.ailingo.server.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
+import net.artux.ailingo.server.repositories.UserRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 

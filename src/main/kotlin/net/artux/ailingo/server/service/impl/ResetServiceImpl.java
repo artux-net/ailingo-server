@@ -1,13 +1,13 @@
-package net.artux.ailingo.server.service.user.reset;
+package net.artux.ailingo.server.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.controller.PasswordController;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.Status;
 import net.artux.ailingo.server.service.EmailService;
-import net.artux.ailingo.server.service.ValuesService;
-import net.artux.ailingo.server.service.user.UserService;
-import net.artux.ailingo.server.service.user.UserRepository;
+import net.artux.ailingo.server.service.ResetService;
+import net.artux.ailingo.server.service.UserService;
+import net.artux.ailingo.server.repositories.UserRepository;
 import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
