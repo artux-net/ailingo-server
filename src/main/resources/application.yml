@@ -35,6 +35,7 @@ registration:
     - ariefymchenco@gmail.com
 
 jwt:
+  secret: lingo
   expiration:
     900000
   refresh-token:
