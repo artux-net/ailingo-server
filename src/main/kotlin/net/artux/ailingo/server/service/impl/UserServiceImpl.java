@@ -2,17 +2,16 @@ package net.artux.ailingo.server.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.configuration.RegistrationConfig;
-import net.artux.ailingo.server.entity.ChatHistoryEntity;
+import net.artux.ailingo.server.configuration.props.RegistrationProperties;
+import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
 import net.artux.ailingo.server.model.UserDto;
-import net.artux.ailingo.server.entity.SavedTopicsEntity;
 import net.artux.ailingo.server.repositories.UserRepository;
 import net.artux.ailingo.server.service.EmailService;
 import net.artux.ailingo.server.service.UserService;
-import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,7 +48,7 @@ public class UserServiceImpl implements UserService {
     private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
     private final Timer timer = new Timer();
     private final RandomString randomString = new RandomString();
-    private final RegistrationConfig registrationConfig;
+    private final RegistrationProperties registrationProperties;
 
     @PostConstruct
     public void init() {
@@ -73,7 +71,7 @@ public class UserServiceImpl implements UserService {
 
         email = newUser.getEmail().toLowerCase();
 
-        Set<String> allowedEmails = registrationConfig.getAllowedEmails();
+        Set<String> allowedEmails = registrationProperties.getAllowedEmails();
 
         if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
             return new Status(false, "Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
@@ -258,26 +256,15 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
             return new Status(false, "Старый пароль введен неверно.");
         }
+
         Status status = userValidator.checkPassword(newPassword);
         if (!status.isSuccess()) {
             return status;
         }
         currentUser.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(currentUser);
+
         return new Status(true, "Пароль успешно изменен.");
     }
 
-    @Override
-    public void saveUserChat(UserEntity user, String chatContent) {
-        ChatHistoryEntity chat = new ChatHistoryEntity();
-        chat.setUser(user);
-        chat.setChatContent(chatContent);
-        user.getChatHistory().add(chat);
-        userRepository.save(user);
-    }
-
-    @Override
-    public List<ChatHistoryEntity> getUserChats(UserEntity user) {
-        return new ArrayList<>(user.getChatHistory());
-    }
 }

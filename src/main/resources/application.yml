@@ -9,6 +9,16 @@ server:
     protocol: ws
 
 spring:
+  ai:
+    openai:
+      api-key: key
+      chat:
+        options:
+          model: gpt-4o-mini
+
+  docker:
+    compose:
+      file: dev/docker-compose-local.yml
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   datasource:

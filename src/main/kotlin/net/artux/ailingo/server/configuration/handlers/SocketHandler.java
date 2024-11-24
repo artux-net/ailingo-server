@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.ChatUpdate;
-import net.artux.ailingo.server.model.MessageDTO;
+import net.artux.ailingo.server.model.MessageDto;
 import net.artux.ailingo.server.service.UserService;
 import net.artux.ailingo.server.service.impl.UserServiceImpl;
 import org.slf4j.Logger;
@@ -132,7 +132,7 @@ public abstract class SocketHandler implements WebSocketHandler {
             return ChatUpdate.empty();
         else {
             logger.debug("{}: Creating chat-update \"{}\" from {}", this.getClass().getSimpleName(), textMessage, getMember(userSession).getLogin());
-            return ChatUpdate.of(new MessageDTO(UserServiceImpl.dto(getMember(userSession)), textMessage));
+            return ChatUpdate.of(new MessageDto(UserServiceImpl.dto(getMember(userSession)), textMessage));
         }
     }
 

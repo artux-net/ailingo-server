@@ -5,14 +5,14 @@ import lombok.Data;
 import java.time.Instant;
 
 @Data
-public class MessageDTO {
+public class MessageDto {
 
     private Type type;
     private UserDto author;
     private String content;
     private Instant timestamp;
 
-    public MessageDTO(UserDto author, String content) {
+    public MessageDto(UserDto author, String content) {
         type = Type.NEW;
         this.author = author;
         this.content = content;

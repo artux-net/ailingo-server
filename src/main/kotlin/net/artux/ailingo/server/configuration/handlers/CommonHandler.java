@@ -3,7 +3,7 @@ package net.artux.ailingo.server.configuration.handlers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.ChatUpdate;
-import net.artux.ailingo.server.model.MessageDTO;
+import net.artux.ailingo.server.model.MessageDto;
 import net.artux.ailingo.server.service.UserService;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -15,7 +15,7 @@ public abstract class CommonHandler extends SocketHandler {
 
     private final static ChatUpdate EMPTY_UPDATE = ChatUpdate.empty();
 
-    private final LinkedList<MessageDTO> lastMessages;
+    private final LinkedList<MessageDto> lastMessages;
 
     public CommonHandler(UserService userService, ObjectMapper objectMapper) {
         super(objectMapper, userService);

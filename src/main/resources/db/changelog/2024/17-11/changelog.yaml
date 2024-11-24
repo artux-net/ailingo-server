@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      author: m.prygunov
+      comment: "Add fields to topic"
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      id: 2
+      changes:
+        - sqlFile:
+            path: topic-prompts-and-limit.sql
+            relativeToChangelogFile: true

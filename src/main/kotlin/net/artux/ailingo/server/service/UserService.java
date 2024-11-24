@@ -1,14 +1,17 @@
 package net.artux.ailingo.server.service;
 
 
-import net.artux.ailingo.server.entity.ChatHistoryEntity;
+import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
 import net.artux.ailingo.server.model.UserDto;
-import net.artux.ailingo.server.entity.TopicEntity;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public interface UserService {
 
@@ -48,8 +51,4 @@ public interface UserService {
 
     Status changePassword(String oldPassword, String newPassword);
 
-
-    public void saveUserChat(UserEntity user, String chatContent);
-
-    public List<ChatHistoryEntity> getUserChats(UserEntity user);
 }

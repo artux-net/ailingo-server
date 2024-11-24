@@ -1,19 +1,21 @@
 package net.artux.ailingo.server.entity.user;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.BaseEntity;
-import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.model.RegisterUserDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -63,9 +65,6 @@ public class UserEntity extends BaseEntity {
 
     @ElementCollection
     private Set<String> favoriteWords = new HashSet<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatHistoryEntity> chatHistory = new ArrayList<>();
 
     public void addCoins(int amount) {
         this.coins += amount;

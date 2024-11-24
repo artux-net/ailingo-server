@@ -1,12 +1,19 @@
-package net.artux.ailingo.server.service;
+package net.artux.ailingo.server.service
 
-public interface ChatService {
+import net.artux.ailingo.server.model.ConversationDto
+import net.artux.ailingo.server.model.ConversationMessageDto
+import net.artux.ailingo.server.model.PromptRequest
+import java.util.UUID
 
-    void setContext(String context);
+interface ChatService {
 
-    String getResponse(String message);
+    fun startConversation(topicName: String): UUID
 
-    void setAIRole(String userRole);
+    fun continueDialog(chatId: UUID, userInput: String)
 
-    void setUserRole(String aiRole);
+    fun getMessages(chatId: UUID): List<ConversationMessageDto>
+
+    fun getConversations(): List<ConversationDto>
+
+    fun testPrompt(promptRequest: PromptRequest): String
 }
