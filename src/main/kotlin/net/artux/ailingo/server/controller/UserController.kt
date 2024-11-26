@@ -55,8 +55,8 @@ class UserController(
     @Operation(summary = "Обновление профиля пользователя")
     @PutMapping("/updateProfile")
     fun updateUserProfile(
-        @RequestParam(name = "name") name: String,
-        @RequestParam(name = "email") email: String,
+        @RequestParam(name = "name") name: String?,
+        @RequestParam(name = "email") email: String?,
         @RequestParam(name = "avatar") avatar: String?
     ): Status {
         return userService.updateUserProfile(name, email, avatar)

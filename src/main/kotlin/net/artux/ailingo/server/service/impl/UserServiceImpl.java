@@ -236,18 +236,41 @@ public class UserServiceImpl implements UserService {
     @Override
     public Status updateUserProfile(String name, String email, String avatar) {
         UserEntity currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return new Status(false, "Текущий пользователь не найден.");
+        }
 
-        Status nameStatus = userValidator.checkName(name);
-        if (!nameStatus.isSuccess()) {
-            return nameStatus;
+        boolean isUpdated = false;
+
+        if (name != null && !name.isEmpty() && !name.equals(currentUser.getName())) {
+            Status nameStatus = userValidator.checkName(name);
+            if (!nameStatus.isSuccess()) {
+                return nameStatus;
+            }
+
+            currentUser.setName(name);
+            isUpdated = true;
         }
-        Status emailStatus = userValidator.checkEmail(email);
-        if (!emailStatus.isSuccess()) {
-            return emailStatus;
+
+        if (email != null && !email.isEmpty() && !email.equals(currentUser.getEmail())) {
+            Status emailStatus = userValidator.checkEmail(email);
+            if (!emailStatus.isSuccess()) {
+                return emailStatus;
+            }
+
+            currentUser.setEmail(email);
+            isUpdated = true;
         }
-        if (avatar != null && !avatar.isEmpty()) {
+
+        if (avatar != null && !avatar.isEmpty() && !avatar.equals(currentUser.getAvatar())) {
             currentUser.setAvatar(avatar);
+            isUpdated = true;
         }
+
+        if (!isUpdated) {
+            return new Status(false, "Нет изменений для обновления.");
+        }
+
         userRepository.save(currentUser);
         return new Status(true, "Профиль успешно обновлен.");
     }
@@ -255,13 +278,23 @@ public class UserServiceImpl implements UserService {
     @Override
     public Status changePassword(String oldPassword, String newPassword) {
         UserEntity currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return new Status(false, "Текущий пользователь не найден.");
+        }
+
         if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
             return new Status(false, "Старый пароль введен неверно.");
         }
+
+        if (passwordEncoder.matches(newPassword, currentUser.getPassword())) {
+            return new Status(false, "Новый пароль не должен совпадать с текущим.");
+        }
+
         Status status = userValidator.checkPassword(newPassword);
         if (!status.isSuccess()) {
             return status;
         }
+
         currentUser.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(currentUser);
         return new Status(true, "Пароль успешно изменен.");
