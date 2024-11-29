@@ -6,41 +6,32 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
-import net.artux.ailingo.server.entity.RefreshTokenEntity
-import net.artux.ailingo.server.entity.user.UserEntity
-import net.artux.ailingo.server.repositories.RefreshTokenRepository
 import net.artux.ailingo.server.repositories.UserRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Service
 import java.security.Key
-import java.time.Instant
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
 @Service
 class JwtUtil(
     private val userRepository: UserRepository,
-    private val refreshTokenRepository: RefreshTokenRepository,
-    @Value("\${jwt.secret}") private val secretKey: String,
-    @Value("\${jwt.expiration}") private val jwtExpiration: Long,
-    @Value("\${jwt.refresh-token.expiration}") private val refreshTokenExpiration: Long
+    private val redisTemplate: StringRedisTemplate,
+    jwtProperties: JwtProperties
 ) {
+    private val secretKey = jwtProperties.secret
+    private val jwtExpiration = jwtProperties.expiration
+    private val refreshTokenExpiration = jwtProperties.refreshToken.expiration
     private val logger: Logger = LoggerFactory.getLogger(JwtUtil::class.java)
 
     fun generateRefreshToken(userDetails: UserDetails): String {
-        val user: UserEntity = userRepository.findByLogin(userDetails.username).orElseThrow()
-
-        // Инвалидируем старый refresh token
-        refreshTokenRepository.deleteByUser(user)
-
-        val refreshToken = createRefreshToken(HashMap(), userDetails.username)
-        val expiryDate = Instant.now().plusMillis(refreshTokenExpiration)
-
-        // Сохраняем новый refresh token
-        refreshTokenRepository.save(RefreshTokenEntity(user, refreshToken, expiryDate))
+        val username = userDetails.username
+        val refreshToken = createRefreshToken(HashMap(), username)
+        redisTemplate.opsForValue().set(username, refreshToken, refreshTokenExpiration, TimeUnit.MILLISECONDS)
 
         return refreshToken
     }
@@ -49,18 +40,21 @@ class JwtUtil(
         try {
             val username = extractUsername(refreshToken)
             if (username != null) {
-                val user: UserEntity = userRepository.findByLogin(username).orElseThrow()
-                val refreshTokenEntity = refreshTokenRepository.findByUser(user).orElse(null)
+                val storedRefreshToken = redisTemplate.opsForValue().get(username)
 
-                // Проверяем refresh token в базе
-                if (refreshTokenEntity != null && refreshToken == refreshTokenEntity.token && !refreshTokenEntity.isExpired) {
+                if (storedRefreshToken != null && storedRefreshToken == refreshToken && !isTokenExpired(refreshToken)) {
+                    val user = userRepository.findByLogin(username).orElseThrow()
                     val accessToken = generateToken(user)
-                    refreshTokenRepository.delete(refreshTokenEntity)
+
+                    // Invalidate old refresh token and generate a new one
+                    redisTemplate.delete(username) // Delete old token
+                    generateRefreshToken(user) // Generate and store a new token
+
                     return accessToken
                 }
             }
         } catch (e: JwtException) {
-            logger.error(e.message)
+            logger.error("Invalid refresh token: {}", e.message)
         }
         return null
     }
