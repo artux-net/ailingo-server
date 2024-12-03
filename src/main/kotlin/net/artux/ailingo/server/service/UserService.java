@@ -5,6 +5,7 @@ import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
+import net.artux.ailingo.server.model.UpdateUserProfileDto;
 import net.artux.ailingo.server.model.UserDto;
 import net.artux.ailingo.server.entity.TopicEntity;
 
@@ -44,7 +45,7 @@ public interface UserService {
 
     void removeCoinsFromCurrentUser(int amount);
 
-    Status updateUserProfile(String name, String email, String avatar);
+    Status updateUserProfile(UpdateUserProfileDto updateUserProfile);
 
     Status changePassword(String oldPassword, String newPassword);
 
