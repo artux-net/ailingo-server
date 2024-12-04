@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "add admin and user role"
+      id: 20241120-1
+      changes:
+        - sqlFile:
+            path: add_role_column.sql
+            relativeToChangelogFile: true

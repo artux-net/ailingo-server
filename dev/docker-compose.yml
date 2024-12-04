@@ -13,17 +13,28 @@ services:
     labels:
       io.portainer.accesscontrol.teams: dev,prod
 
+  redis:
+    image: redis:latest
+    container_name: ailingo_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    labels:
+      io.portainer.accesscontrol.teams: dev,prod
+
   backend-prod: &backend
     build:
       context: ..
     depends_on:
       - db
+      - redis
     container_name: ailingo
     restart: unless-stopped
     profiles:
       - prod
     environment:
       - CHAT_TOKEN=${CHAT_TOKEN}
+      - JWT_SECRET=${JWT_SECRET}
       - SERVER_HOST=${SERVER_HOST}
       - SERVER_PROTOCOL=${SERVER_PROTOCOL}
       - SERVER_WEBSOCKET_PROTOCOL=${SERVER_WEBSOCKET_PROTOCOL}
@@ -31,6 +42,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ailingo
       - SPRING_DATASOURCE_USERNAME=ailingo
       - SPRING_DATASOURCE_PASSWORD=&1Te3O6zHnD9
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
     ports:
       - "11001:8080"
 

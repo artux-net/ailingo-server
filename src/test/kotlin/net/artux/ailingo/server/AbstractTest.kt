@@ -1,5 +1,6 @@
 package net.artux.ailingo.server
 
+import net.artux.ailingo.server.util.RandomString
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -30,6 +31,7 @@ open class AbstractTest {
             registry.add("spring.datasource.url", db::getJdbcUrl)
             registry.add("spring.datasource.username", db::getUsername)
             registry.add("spring.datasource.password", db::getPassword)
+            registry.add("jwt.secret"){ RandomString().nextString() }
         }
     }
 }

@@ -20,4 +20,4 @@ jobs:
           cache: 'gradle'
 
       - name: Test with Gradle
-        run: ./gradlew test
+        run: ./gradlew test --stacktrace

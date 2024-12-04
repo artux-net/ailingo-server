@@ -1,17 +1,28 @@
 package net.artux.ailingo.server.entity.user;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.BaseEntity;
-import net.artux.ailingo.server.model.RegisterUserDto;
+import net.artux.ailingo.server.entity.ChatHistoryEntity;
 import net.artux.ailingo.server.entity.SavedTopicsEntity;
+import net.artux.ailingo.server.model.RegisterUserDto;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,7 +32,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "app_user")
-public class UserEntity extends BaseEntity {
+public class UserEntity extends BaseEntity implements UserDetails {
 
     @Column(unique = true)
     private String login;
@@ -44,6 +55,14 @@ public class UserEntity extends BaseEntity {
     private Instant lastLoginAt;
     private Instant lastSession;
 
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    private boolean accountNonExpired = true;
+    private boolean accountNonLocked = true;
+    private boolean credentialsNonExpired = true;
+    private boolean enabled = true;
+
     public UserEntity(RegisterUserDto registerUser, PasswordEncoder passwordEncoder) {
         login = registerUser.getLogin();
         password = passwordEncoder.encode(registerUser.getPassword());
@@ -54,7 +73,12 @@ public class UserEntity extends BaseEntity {
         xp = 0;
         streak = 0;
         coins = 0;
+        role = Role.USER;
         lastLoginAt = registration = Instant.now();
+        accountNonExpired = true;
+        accountNonLocked = true;
+        credentialsNonExpired = true;
+        enabled = true;
     }
 
 
@@ -73,5 +97,35 @@ public class UserEntity extends BaseEntity {
 
     public void removeCoins(int amount) {
         this.coins -= amount;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return login;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return accountNonExpired;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return accountNonLocked;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return credentialsNonExpired;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
     }
 }
