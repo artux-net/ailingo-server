@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
+import net.artux.ailingo.server.model.refreshtoken.RefreshTokenResponse
 import net.artux.ailingo.server.repositories.UserRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -32,30 +33,28 @@ class JwtUtil(
         val username = userDetails.username
         val refreshToken = createRefreshToken(HashMap(), username)
         redisTemplate.opsForValue().set(username, refreshToken, refreshTokenExpiration, TimeUnit.MILLISECONDS)
-
+        logger.info("Refresh token stored: $username")
         return refreshToken
     }
 
-    fun refreshToken(refreshToken: String): String? {
+    fun refreshToken(refreshToken: String): RefreshTokenResponse? {
         try {
             val username = extractUsername(refreshToken)
+            logger.info("Extracted username: $username")
             if (username != null) {
                 val storedRefreshToken = redisTemplate.opsForValue().get(username)
-
+                logger.info("Stored token: $storedRefreshToken")
                 if (storedRefreshToken != null && storedRefreshToken == refreshToken && !isTokenExpired(refreshToken)) {
                     val user = userRepository.findByLogin(username).orElseThrow()
                     val accessToken = generateToken(user)
-
-                    // Invalidate old refresh token and generate a new one
-                    redisTemplate.delete(username) // Delete old token
-                    generateRefreshToken(user) // Generate and store a new token
-
-                    return accessToken
+                    val newRefreshToken = generateRefreshToken(user)
+                    return RefreshTokenResponse(accessToken, newRefreshToken)
                 }
             }
         } catch (e: JwtException) {
             logger.error("Invalid refresh token: {}", e.message)
         }
+        logger.info("Refresh token is invalid or expired.")
         return null
     }
 

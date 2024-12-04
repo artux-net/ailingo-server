@@ -3,7 +3,6 @@ package net.artux.ailingo.server.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
-import net.artux.ailingo.server.model.ApiResponse
 import net.artux.ailingo.server.model.RegisterUserDto
 import net.artux.ailingo.server.model.Status
 import net.artux.ailingo.server.model.UserDto
@@ -14,7 +13,15 @@ import net.artux.ailingo.server.model.refreshtoken.RefreshTokenResponse
 import net.artux.ailingo.server.model.register.RegisterResponse
 import net.artux.ailingo.server.service.ResetService
 import net.artux.ailingo.server.service.UserService
-import org.springframework.web.bind.annotation.*
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 
 @Tag(name = "Пользователь")
@@ -29,35 +36,23 @@ class UserController(
 
     @Operation(summary = "Регистрация")
     @PostMapping("/register")
-    fun registerUser(@RequestBody registerUser: RegisterUserDto): ApiResponse<RegisterResponse> {
-        return try {
-            val response = userService.registerUser(registerUser)
-            ApiResponse(true, 200, "Регистрация успешна", response)
-        } catch (e: Exception) {
-            ApiResponse(false, 400, e.message ?: "Ошибка регистрации")
-        }
+    fun registerUser(@RequestBody registerUser: RegisterUserDto): ResponseEntity<RegisterResponse> {
+        val response = userService.registerUser(registerUser)
+        return ResponseEntity.ok(response)
     }
 
     @Operation(summary = "Авторизация")
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): ApiResponse<LoginResponse> {
-        return try {
-            val response = userService.login(request)
-            ApiResponse(true, 200, "Авторизация успешна", response)
-        } catch (e: Exception) {
-            ApiResponse(false, 401, e.message ?: "Ошибка авторизации")
-        }
+    fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
+        val response = userService.login(request)
+        return ResponseEntity.ok(response)
     }
 
     @Operation(summary = "Обновление JWT токена")
     @PostMapping("/refresh-token")
-    fun refreshToken(@RequestBody request: RefreshTokenRequest): ApiResponse<RefreshTokenResponse> {
-        return try {
-            val response = userService.refreshToken(request)
-            ApiResponse(true, 200, "Токен обновлен", response)
-        } catch (e: Exception) {
-            ApiResponse(false, 400, e.message ?: "Ошибка обновления токена")
-        }
+    fun refreshToken(@RequestBody request: RefreshTokenRequest): ResponseEntity<RefreshTokenResponse> {
+        val response = userService.refreshToken(request)
+        return ResponseEntity.ok(response)
     }
 
     @Operation(summary = "Основная информация")

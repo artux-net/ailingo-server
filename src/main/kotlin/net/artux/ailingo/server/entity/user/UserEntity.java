@@ -58,6 +58,11 @@ public class UserEntity extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private boolean accountNonExpired = true;
+    private boolean accountNonLocked = true;
+    private boolean credentialsNonExpired = true;
+    private boolean enabled = true;
+
     public UserEntity(RegisterUserDto registerUser, PasswordEncoder passwordEncoder) {
         login = registerUser.getLogin();
         password = passwordEncoder.encode(registerUser.getPassword());
@@ -68,7 +73,12 @@ public class UserEntity extends BaseEntity implements UserDetails {
         xp = 0;
         streak = 0;
         coins = 0;
+        role = Role.USER;
         lastLoginAt = registration = Instant.now();
+        accountNonExpired = true;
+        accountNonLocked = true;
+        credentialsNonExpired = true;
+        enabled = true;
     }
 
 
@@ -101,21 +111,21 @@ public class UserEntity extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return true;
+        return accountNonExpired;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountNonLocked;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        return credentialsNonExpired;
     }
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

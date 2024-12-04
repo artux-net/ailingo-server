@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "add user fields"
+      id: 20241204-1
+      changes:
+        - sqlFile:
+            path: add_user_fields.sql
+            relativeToChangelogFile: true

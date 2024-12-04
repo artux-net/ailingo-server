@@ -114,13 +114,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
-        String refreshToken = request.getRefreshToken();
-        String accessToken = jwtUtil.refreshToken(refreshToken);
+        RefreshTokenResponse response = jwtUtil.refreshToken(request.getRefreshToken());
 
-        if (accessToken == null) {
+        if (response == null) {
             throw new IllegalArgumentException("Refresh token is invalid or expired.");
         }
-        return new RefreshTokenResponse(accessToken, refreshToken);
+        return response;
     }
 
     public UserEntity saveUser(RegisterUserDto registerUserDto) {

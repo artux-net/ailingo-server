@@ -1,8 +1,9 @@
 package net.artux.ailingo.server.configuration.security
 
+import net.artux.ailingo.server.service.impl.UserDetailServiceImpl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
@@ -18,22 +20,27 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(securedEnabled = true)
 class SecurityConfiguration(
     private val jwtFilter: JwtFilter,
-    private val authenticationProvider: AuthenticationProvider
+    private val userDetailService: UserDetailServiceImpl
 ) {
-
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         return http.csrf { obj: CsrfConfigurer<HttpSecurity> -> obj.disable() }
+            .cors(Customizer.withDefaults())
+            .headers { headers ->
+                headers.frameOptions { frameOptions ->
+                    frameOptions.disable()
+                }
+            }
             .authorizeHttpRequests {
                 it.requestMatchers(*WHITE_LIST).permitAll()
                     .anyRequest().authenticated()
             }
-            .httpBasic(Customizer.withDefaults())
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
-            // Используем JWT, поэтому сохранять данные о сессии не нужно
-            // При каждом запросе клиент предоставляет заголовок Authorization (за исключением white_list)
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authenticationProvider(authenticationProvider)
+            .authenticationProvider(DaoAuthenticationProvider().apply {
+                setUserDetailsService(userDetailService)
+                setPasswordEncoder(BCryptPasswordEncoder())
+            })
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()
     }
