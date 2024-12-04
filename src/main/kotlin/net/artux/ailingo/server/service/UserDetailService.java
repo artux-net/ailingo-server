@@ -6,6 +6,7 @@ import net.artux.ailingo.server.model.SecurityUser;
 import net.artux.ailingo.server.repositories.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Optional;
 
 @Component
@@ -44,6 +46,7 @@ public class UserDetailService implements UserDetailsService {
             UserDetails userDetails = User.builder()
                     .username(simpleUser.getLogin())
                     .password(simpleUser.getPassword())
+                    .authorities(Collections.singletonList(new SimpleGrantedAuthority("SCOPE_delete_topic")))
                     .build();
             return new SecurityUser(simpleUser.getId(), userDetails);
         } else {
