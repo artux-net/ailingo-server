@@ -164,6 +164,7 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserDto() {
         return dto(getCurrentUser());
     }
+
     @Override
     public Optional<UserEntity> getUserByEmail(String email) {
         return userRepository.findMemberByEmail(email);
@@ -175,7 +176,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public static UserDto dto(UserEntity userEntity) {
-        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(),userEntity.getEmail(), userEntity.getAvatar(),
+        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(), userEntity.getEmail(), userEntity.getAvatar(),
                 userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
                 userEntity.getRegistration(), userEntity.getLastLoginAt());
     }
@@ -187,6 +188,7 @@ public class UserServiceImpl implements UserService {
         currentUser.getSavedTopics().forEach(savedTopicsEntity -> savedTopics.addAll(savedTopicsEntity.getSavedTopics()));
         return savedTopics;
     }
+
     @Override
     public void saveUserTopics(Set<TopicEntity> topics) {
         UserEntity currentUser = getCurrentUser();
@@ -238,16 +240,21 @@ public class UserServiceImpl implements UserService {
         return getCurrentUser().getFavoriteWords();
     }
 
-    public void addCoinsToCurrentUser(int amount) {
+    public Status changeCoinsForCurrentUser(int amount) {
         UserEntity user = getCurrentUser();
-        user.addCoins(amount);
-        userRepository.save(user);
-    }
-
-    public void removeCoinsFromCurrentUser(int amount) {
-        UserEntity user = getCurrentUser();
-        user.removeCoins(amount);
-        userRepository.save(user);
+        if (amount > 0) {
+            user.changeCoins(amount);
+            userRepository.save(user);
+            return new Status(true, "Монеты зачислены.");
+        } else {
+            if (user.getCoins() < Math.abs(amount)) {
+                return new Status(false, "Недостаточно монет.");
+            } else {
+                user.changeCoins(amount);
+                userRepository.save(user);
+                return new Status(true, "Топик получен.");
+            }
+        }
     }
 
     @Override
