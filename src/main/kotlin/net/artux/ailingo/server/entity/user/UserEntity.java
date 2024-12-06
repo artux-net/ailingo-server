@@ -67,11 +67,8 @@ public class UserEntity extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatHistoryEntity> chatHistory = new ArrayList<>();
 
-    public void addCoins(int amount) {
+    public void changeCoins(int amount) {
         this.coins += amount;
     }
 
-    public void removeCoins(int amount) {
-        this.coins -= amount;
-    }
 }

@@ -40,9 +40,7 @@ public interface UserService {
 
     Set<String> getFavoriteWords();
 
-    void addCoinsToCurrentUser(int amount);
-
-    void removeCoinsFromCurrentUser(int amount);
+    Status changeCoinsForCurrentUser(int amount);
 
     Status updateUserProfile(String name, String email, String avatar);
 

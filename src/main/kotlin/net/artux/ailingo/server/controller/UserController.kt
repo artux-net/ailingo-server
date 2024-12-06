@@ -38,18 +38,11 @@ class UserController(
         return resetService.sendResetPasswordLetter(email)
     }
 
-    @PostMapping("/addCoins")
-    @Operation(summary = "Добавить монеты пользователю")
-    fun addCoinsToCurrentUser(@RequestParam("amount") amount: Int): Status {
-        userService.addCoinsToCurrentUser(amount)
-        return Status(true, "Монеты успешно добавлены.")
-    }
-
-    @PostMapping("/removeCoins")
-    @Operation(summary = "Вычесть монеты у пользователя")
-    fun removeCoinsFromCurrentUser(@RequestParam("amount") amount: Int): Status {
-        userService.removeCoinsFromCurrentUser(amount)
-        return Status(true, "Монеты успешно убавлены.")
+    @PostMapping("/changeCoins")
+    @Operation(summary = "Смена кол-ва монет пользователю")
+    fun changeCoinsForCurrentUser(@RequestParam("amount") amount: Int): Status {
+        val status = userService.changeCoinsForCurrentUser(amount)
+        return status
     }
 
     @Operation(summary = "Обновление профиля пользователя")
