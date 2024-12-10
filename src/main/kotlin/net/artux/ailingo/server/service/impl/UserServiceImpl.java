@@ -11,6 +11,7 @@ import net.artux.ailingo.server.entity.user.Role;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
+import net.artux.ailingo.server.model.UpdateUserProfileDto;
 import net.artux.ailingo.server.model.UserDto;
 import net.artux.ailingo.server.model.login.LoginRequest;
 import net.artux.ailingo.server.model.login.LoginResponse;
@@ -240,20 +241,44 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Status updateUserProfile(String name, String email, String avatar) {
+    public Status updateUserProfile(UpdateUserProfileDto updateUserProfile) {
+        if (updateUserProfile == null) {
+            return new Status(false, "Данные для обновления не переданы.");
+        }
+
         UserEntity currentUser = getCurrentUser();
 
-        Status nameStatus = userValidator.checkName(name);
-        if (!nameStatus.isSuccess()) {
-            return nameStatus;
+        boolean isUpdated = false;
+
+        if (!updateUserProfile.getName().equals(currentUser.getName())) {
+            Status nameStatus = userValidator.checkName(updateUserProfile.getName());
+            if (!nameStatus.isSuccess()) {
+                return nameStatus;
+            }
+
+            currentUser.setName(updateUserProfile.getName());
+            isUpdated = true;
         }
-        Status emailStatus = userValidator.checkEmail(email);
-        if (!emailStatus.isSuccess()) {
-            return emailStatus;
+
+        if (!updateUserProfile.getEmail().equals(currentUser.getEmail())) {
+            Status emailStatus = userValidator.checkEmail(updateUserProfile.getEmail());
+            if (!emailStatus.isSuccess()) {
+                return emailStatus;
+            }
+
+            currentUser.setEmail(updateUserProfile.getEmail());
+            isUpdated = true;
         }
-        if (avatar != null && !avatar.isEmpty()) {
-            currentUser.setAvatar(avatar);
+
+        if (!updateUserProfile.getAvatar().equals(currentUser.getAvatar())) {
+            currentUser.setAvatar(updateUserProfile.getAvatar());
+            isUpdated = true;
         }
+
+        if (!isUpdated) {
+            return new Status(false, "Нет изменений для обновления.");
+        }
+
         userRepository.save(currentUser);
         return new Status(true, "Профиль успешно обновлен.");
     }
@@ -261,13 +286,20 @@ public class UserServiceImpl implements UserService {
     @Override
     public Status changePassword(String oldPassword, String newPassword) {
         UserEntity currentUser = getCurrentUser();
+
         if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
             return new Status(false, "Старый пароль введен неверно.");
         }
+
+        if (passwordEncoder.matches(newPassword, currentUser.getPassword())) {
+            return new Status(false, "Новый пароль не должен совпадать с текущим.");
+        }
+
         Status status = userValidator.checkPassword(newPassword);
         if (!status.isSuccess()) {
             return status;
         }
+
         currentUser.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(currentUser);
         return new Status(true, "Пароль успешно изменен.");
