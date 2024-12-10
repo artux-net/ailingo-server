@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.service;
+package net.artux.ailingo.server.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.entity.user.UserEntity;
@@ -17,9 +17,9 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class UserDetailService implements UserDetailsService {
+public class UserDetailServiceImpl implements UserDetailsService {
 
-    private final Logger logger = LoggerFactory.getLogger(UserDetailService.class);
+    private final Logger logger = LoggerFactory.getLogger(UserDetailServiceImpl.class);
 
     private final UserRepository userRepository;
 

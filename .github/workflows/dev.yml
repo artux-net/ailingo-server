@@ -27,7 +27,8 @@ jobs:
 
       - name: Run
         env:
-          CHAT_TOKEN: ${{secrets.CHAT_TOKEN}}
+          CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
