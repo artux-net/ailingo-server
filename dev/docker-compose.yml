@@ -42,8 +42,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ailingo
       - SPRING_DATASOURCE_USERNAME=ailingo
       - SPRING_DATASOURCE_PASSWORD=&1Te3O6zHnD9
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
     ports:
       - "11001:8080"
 
