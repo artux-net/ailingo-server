@@ -78,6 +78,4 @@ public class EmailServiceIml implements EmailService {
         sendSimpleMessage(user.getEmail(), "Подтвердите регистрацию", mailTemplateCon
                 .replace("${link}", confirmLink));
     }
-
-
 }

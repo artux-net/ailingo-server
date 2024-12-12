@@ -81,7 +81,6 @@ public class UserEntity extends BaseEntity implements UserDetails {
         enabled = true;
     }
 
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SavedTopicsEntity> savedTopics = new HashSet<>();
 
@@ -91,17 +90,13 @@ public class UserEntity extends BaseEntity implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatHistoryEntity> chatHistory = new ArrayList<>();
 
-    public void addCoins(int amount) {
-        this.coins += amount;
-    }
-
-    public void removeCoins(int amount) {
-        this.coins -= amount;
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    public void changeCoins(int amount) {
+        this.coins += amount;
     }
 
     @Override

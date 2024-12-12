@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
 import net.artux.ailingo.server.model.RegisterUserDto
 import net.artux.ailingo.server.model.Status
+import net.artux.ailingo.server.model.UpdateUserProfileDto
 import net.artux.ailingo.server.model.UserDto
 import net.artux.ailingo.server.model.login.LoginRequest
 import net.artux.ailingo.server.model.login.LoginResponse
@@ -67,28 +68,17 @@ class UserController(
         return resetService.sendResetPasswordLetter(email)
     }
 
-    @PostMapping("/addCoins")
-    @Operation(summary = "Добавить монеты пользователю")
-    fun addCoinsToCurrentUser(@RequestParam("amount") amount: Int): Status {
-        userService.addCoinsToCurrentUser(amount)
-        return Status(true, "Монеты успешно добавлены.")
-    }
-
-    @PostMapping("/removeCoins")
-    @Operation(summary = "Вычесть монеты у пользователя")
-    fun removeCoinsFromCurrentUser(@RequestParam("amount") amount: Int): Status {
-        userService.removeCoinsFromCurrentUser(amount)
-        return Status(true, "Монеты успешно убавлены.")
+    @PostMapping("/changeCoins")
+    @Operation(summary = "Смена кол-ва монет пользователю")
+    fun changeCoinsForCurrentUser(@RequestParam("amount") amount: Int): Status {
+        val status = userService.changeCoinsForCurrentUser(amount)
+        return status
     }
 
     @Operation(summary = "Обновление профиля пользователя")
-    @PutMapping("/updateProfile")
-    fun updateUserProfile(
-        @RequestParam(name = "name") name: String,
-        @RequestParam(name = "email") email: String,
-        @RequestParam(name = "avatar") avatar: String?
-    ): Status {
-        return userService.updateUserProfile(name, email, avatar)
+    @PostMapping("/updateProfile")
+    fun updateUserProfile(@RequestBody updateUserProfile: UpdateUserProfileDto?): Status {
+        return userService.updateUserProfile(updateUserProfile)
     }
 
     @Operation(summary = "Изменение пароля пользователя")

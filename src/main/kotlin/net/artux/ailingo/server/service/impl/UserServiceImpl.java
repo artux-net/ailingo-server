@@ -11,6 +11,7 @@ import net.artux.ailingo.server.entity.user.Role;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
+import net.artux.ailingo.server.model.UpdateUserProfileDto;
 import net.artux.ailingo.server.model.UserDto;
 import net.artux.ailingo.server.model.login.LoginRequest;
 import net.artux.ailingo.server.model.login.LoginResponse;
@@ -18,15 +19,12 @@ import net.artux.ailingo.server.model.refreshtoken.RefreshTokenRequest;
 import net.artux.ailingo.server.model.refreshtoken.RefreshTokenResponse;
 import net.artux.ailingo.server.model.register.RegisterResponse;
 import net.artux.ailingo.server.repositories.UserRepository;
-import net.artux.ailingo.server.service.EmailService;
 import net.artux.ailingo.server.service.UserService;
-import net.artux.ailingo.server.util.RandomString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,13 +33,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Timer;
 import java.util.UUID;
 
 @Service
@@ -50,26 +45,20 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
-
     private final UserRepository userRepository;
-    private final EmailService emailService;
-    private final ValuesService valuesService;
     private final UserValidator userValidator;
-
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
-
-    private final Map<String, RegisterUserDto> registerUserMap = new HashMap<>();
-    private final Timer timer = new Timer();
-    private final RandomString randomString = new RandomString();
     private final RegistrationConfig registrationConfig;
 
     @PostConstruct
     public void init() {
         if (userRepository.count() == 0) {
-            saveUser(new RegisterUserDto("admin", "pass", "test@test.com", "admin", ""));
+            RegisterUserDto registerUserDto = new RegisterUserDto("admin", "pass", "test@test.com", "admin", "");
+            UserEntity userEntity = new UserEntity(registerUserDto, passwordEncoder);
+            userEntity.setRole(Role.ADMIN);
+            userRepository.save(userEntity);
         }
     }
 
@@ -125,7 +114,6 @@ public class UserServiceImpl implements UserService {
 
     public UserEntity saveUser(RegisterUserDto registerUserDto) {
         UserEntity userEntity = new UserEntity(registerUserDto, passwordEncoder);
-        userEntity.setRole(Role.USER);
         return userRepository.save(userEntity);
     }
 
@@ -227,33 +215,62 @@ public class UserServiceImpl implements UserService {
         return getCurrentUser().getFavoriteWords();
     }
 
-    public void addCoinsToCurrentUser(int amount) {
+    public Status changeCoinsForCurrentUser(int amount) {
         UserEntity user = getCurrentUser();
-        user.addCoins(amount);
-        userRepository.save(user);
-    }
-
-    public void removeCoinsFromCurrentUser(int amount) {
-        UserEntity user = getCurrentUser();
-        user.removeCoins(amount);
-        userRepository.save(user);
+        if (amount > 0) {
+            user.changeCoins(amount);
+            userRepository.save(user);
+            return new Status(true, "Монеты зачислены.");
+        } else {
+            if (user.getCoins() < Math.abs(amount)) {
+                return new Status(false, "Недостаточно монет.");
+            } else {
+                user.changeCoins(amount);
+                userRepository.save(user);
+                return new Status(true, "Топик получен.");
+            }
+        }
     }
 
     @Override
-    public Status updateUserProfile(String name, String email, String avatar) {
+    public Status updateUserProfile(UpdateUserProfileDto updateUserProfile) {
+        if (updateUserProfile == null) {
+            return new Status(false, "Данные для обновления не переданы.");
+        }
+
         UserEntity currentUser = getCurrentUser();
 
-        Status nameStatus = userValidator.checkName(name);
-        if (!nameStatus.isSuccess()) {
-            return nameStatus;
+        boolean isUpdated = false;
+
+        if (!updateUserProfile.getName().equals(currentUser.getName())) {
+            Status nameStatus = userValidator.checkName(updateUserProfile.getName());
+            if (!nameStatus.isSuccess()) {
+                return nameStatus;
+            }
+
+            currentUser.setName(updateUserProfile.getName());
+            isUpdated = true;
         }
-        Status emailStatus = userValidator.checkEmail(email);
-        if (!emailStatus.isSuccess()) {
-            return emailStatus;
+
+        if (!updateUserProfile.getEmail().equals(currentUser.getEmail())) {
+            Status emailStatus = userValidator.checkEmail(updateUserProfile.getEmail());
+            if (!emailStatus.isSuccess()) {
+                return emailStatus;
+            }
+
+            currentUser.setEmail(updateUserProfile.getEmail());
+            isUpdated = true;
         }
-        if (avatar != null && !avatar.isEmpty()) {
-            currentUser.setAvatar(avatar);
+
+        if (!updateUserProfile.getAvatar().equals(currentUser.getAvatar())) {
+            currentUser.setAvatar(updateUserProfile.getAvatar());
+            isUpdated = true;
         }
+
+        if (!isUpdated) {
+            return new Status(false, "Нет изменений для обновления.");
+        }
+
         userRepository.save(currentUser);
         return new Status(true, "Профиль успешно обновлен.");
     }
@@ -261,13 +278,20 @@ public class UserServiceImpl implements UserService {
     @Override
     public Status changePassword(String oldPassword, String newPassword) {
         UserEntity currentUser = getCurrentUser();
+
         if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
             return new Status(false, "Старый пароль введен неверно.");
         }
+
+        if (passwordEncoder.matches(newPassword, currentUser.getPassword())) {
+            return new Status(false, "Новый пароль не должен совпадать с текущим.");
+        }
+
         Status status = userValidator.checkPassword(newPassword);
         if (!status.isSuccess()) {
             return status;
         }
+
         currentUser.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(currentUser);
         return new Status(true, "Пароль успешно изменен.");

@@ -6,6 +6,7 @@ import net.artux.ailingo.server.entity.TopicEntity;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.RegisterUserDto;
 import net.artux.ailingo.server.model.Status;
+import net.artux.ailingo.server.model.UpdateUserProfileDto;
 import net.artux.ailingo.server.model.UserDto;
 import net.artux.ailingo.server.model.login.LoginRequest;
 import net.artux.ailingo.server.model.login.LoginResponse;
@@ -13,7 +14,11 @@ import net.artux.ailingo.server.model.refreshtoken.RefreshTokenRequest;
 import net.artux.ailingo.server.model.refreshtoken.RefreshTokenResponse;
 import net.artux.ailingo.server.model.register.RegisterResponse;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public interface UserService {
 
@@ -47,11 +52,9 @@ public interface UserService {
 
     Set<String> getFavoriteWords();
 
-    void addCoinsToCurrentUser(int amount);
+    Status changeCoinsForCurrentUser(int amount);
 
-    void removeCoinsFromCurrentUser(int amount);
-
-    Status updateUserProfile(String name, String email, String avatar);
+    Status updateUserProfile(UpdateUserProfileDto updateUserProfile);
 
     Status changePassword(String oldPassword, String newPassword);
 

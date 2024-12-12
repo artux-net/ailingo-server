@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import net.artux.ailingo.server.entity.user.UserEntity;
 import net.artux.ailingo.server.model.SecurityUser;
 import net.artux.ailingo.server.repositories.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,8 +16,6 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class UserDetailServiceImpl implements UserDetailsService {
-
-    private final Logger logger = LoggerFactory.getLogger(UserDetailServiceImpl.class);
 
     private final UserRepository userRepository;
 
@@ -44,10 +40,10 @@ public class UserDetailServiceImpl implements UserDetailsService {
             UserDetails userDetails = User.builder()
                     .username(simpleUser.getLogin())
                     .password(simpleUser.getPassword())
+                    .authorities(simpleUser.getAuthorities())
                     .build();
             return new SecurityUser(simpleUser.getId(), userDetails);
         } else {
-            logger.error("User with login '" + username + "' not found.");
             throw new UsernameNotFoundException("User not found");
         }
     }
