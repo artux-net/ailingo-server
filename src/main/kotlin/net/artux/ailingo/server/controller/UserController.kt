@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.RequiredArgsConstructor
 import net.artux.ailingo.server.model.RegisterUserDto
 import net.artux.ailingo.server.model.Status
+import net.artux.ailingo.server.model.UpdateUserProfileDto
 import net.artux.ailingo.server.model.UserDto
 import net.artux.ailingo.server.model.login.LoginRequest
 import net.artux.ailingo.server.model.login.LoginResponse
@@ -82,13 +83,9 @@ class UserController(
     }
 
     @Operation(summary = "Обновление профиля пользователя")
-    @PutMapping("/updateProfile")
-    fun updateUserProfile(
-        @RequestParam(name = "name") name: String,
-        @RequestParam(name = "email") email: String,
-        @RequestParam(name = "avatar") avatar: String?
-    ): Status {
-        return userService.updateUserProfile(name, email, avatar)
+    @PostMapping("/updateProfile")
+    fun updateUserProfile(@RequestBody updateUserProfile: UpdateUserProfileDto?): Status {
+        return userService.updateUserProfile(updateUserProfile)
     }
 
     @Operation(summary = "Изменение пароля пользователя")
