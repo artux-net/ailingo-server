@@ -1,50 +1,48 @@
-package net.artux.ailingo.server.service.impl;
+package net.artux.ailingo.server.service.impl
 
-import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.entity.user.UserEntity;
-import net.artux.ailingo.server.model.SecurityUser;
-import net.artux.ailingo.server.repositories.UserRepository;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Component;
-
-import java.time.Instant;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor
+import net.artux.ailingo.server.entity.UserEntity
+import net.artux.ailingo.server.jwt.model.SecurityUser
+import net.artux.ailingo.server.repository.UserRepository
+import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
+import org.springframework.stereotype.Component
+import java.time.Instant
+import java.util.*
 
 @Component
 @RequiredArgsConstructor
-public class UserDetailServiceImpl implements UserDetailsService {
+class UserDetailServiceImpl(
+    private val userRepository: UserRepository
+) : UserDetailsService {
 
-    private final UserRepository userRepository;
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    override fun loadUserByUsername(username: String): UserDetails {
         if (username.isBlank())
-            throw new UsernameNotFoundException("Access denied.");
+            throw UsernameNotFoundException("Access denied.")
 
-        Optional<UserEntity> userOptional;
-        if (username.contains("@")) {
-            userOptional = userRepository.getByEmail(username);
-        } else
-            userOptional = userRepository.getByLogin(username);
+        val userOptional: Optional<UserEntity> =
+            if (username.contains("@")) {
+                userRepository.getByEmail(username)
+            } else
+                userRepository.getByLogin(username)
 
-        if (userOptional.isPresent()) {
-            UserEntity simpleUser = userOptional.get();
-            if (simpleUser.getLastLoginAt() == null
-                    || simpleUser.getLastLoginAt().plusSeconds(5 * 60).isBefore(Instant.now())) {
-                simpleUser.setLastLoginAt(Instant.now());
-                userRepository.save(simpleUser);
+        if (userOptional.isPresent) {
+            val simpleUser = userOptional.get()
+            if (simpleUser.lastLoginAt == null || simpleUser.lastLoginAt!!.plusSeconds(5 * 60).isBefore(Instant.now())
+            ) {
+                simpleUser.lastLoginAt = Instant.now()
+                userRepository.save(simpleUser)
             }
-            UserDetails userDetails = User.builder()
-                    .username(simpleUser.getLogin())
-                    .password(simpleUser.getPassword())
-                    .authorities(simpleUser.getAuthorities())
-                    .build();
-            return new SecurityUser(simpleUser.getId(), userDetails);
+            val userDetails = User.builder()
+                .username(simpleUser.login)
+                .password(simpleUser.password)
+                .authorities(simpleUser.authorities)
+                .build()
+            return SecurityUser(simpleUser.id, userDetails)
         } else {
-            throw new UsernameNotFoundException("User not found");
+            throw UsernameNotFoundException("User not found")
         }
     }
 }

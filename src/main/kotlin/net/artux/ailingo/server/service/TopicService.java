@@ -1,14 +1,13 @@
 package net.artux.ailingo.server.service;
 
+import net.artux.ailingo.server.dto.CreateTopicDTO;
+import net.artux.ailingo.server.dto.TopicResponseDTO;
+import net.artux.ailingo.server.dto.UpdateTopicDTO;
 import net.artux.ailingo.server.entity.TopicEntity;
-import net.artux.ailingo.server.model.CreateTopicDTO;
-import net.artux.ailingo.server.model.TopicResponseDTO;
-import net.artux.ailingo.server.model.UpdateTopicDTO;
 
 import java.util.List;
 
 public interface TopicService {
-
     List<TopicResponseDTO> getTopics(String locale);
 
     TopicEntity addTopic(CreateTopicDTO createTopicDto);

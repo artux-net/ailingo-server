@@ -1,313 +1,337 @@
-package net.artux.ailingo.server.service.impl;
+package net.artux.ailingo.server.service.impl
 
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.configuration.RegistrationConfig;
-import net.artux.ailingo.server.configuration.security.JwtUtil;
-import net.artux.ailingo.server.entity.ChatHistoryEntity;
-import net.artux.ailingo.server.entity.SavedTopicsEntity;
-import net.artux.ailingo.server.entity.TopicEntity;
-import net.artux.ailingo.server.entity.user.Role;
-import net.artux.ailingo.server.entity.user.UserEntity;
-import net.artux.ailingo.server.model.RegisterUserDto;
-import net.artux.ailingo.server.model.Status;
-import net.artux.ailingo.server.model.UpdateUserProfileDto;
-import net.artux.ailingo.server.model.UserDto;
-import net.artux.ailingo.server.model.login.LoginRequest;
-import net.artux.ailingo.server.model.login.LoginResponse;
-import net.artux.ailingo.server.model.refreshtoken.RefreshTokenRequest;
-import net.artux.ailingo.server.model.refreshtoken.RefreshTokenResponse;
-import net.artux.ailingo.server.model.register.RegisterResponse;
-import net.artux.ailingo.server.repositories.UserRepository;
-import net.artux.ailingo.server.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import jakarta.annotation.PostConstruct
+import lombok.RequiredArgsConstructor
+import net.artux.ailingo.server.core.util.GlobalExceptionHandler
+import net.artux.ailingo.server.core.util.InvalidRequestException
+import net.artux.ailingo.server.core.util.UserValidator
+import net.artux.ailingo.server.core.util.generateVerificationCode
+import net.artux.ailingo.server.dto.RegisterUserDto
+import net.artux.ailingo.server.dto.UpdateUserProfileDto
+import net.artux.ailingo.server.dto.UserDto
+import net.artux.ailingo.server.entity.PendingUserEntity
+import net.artux.ailingo.server.entity.UserEntity
+import net.artux.ailingo.server.jwt.model.RefreshTokenRequest
+import net.artux.ailingo.server.jwt.model.RefreshTokenResponse
+import net.artux.ailingo.server.jwt.util.JwtUtil
+import net.artux.ailingo.server.model.ChangeCoinsResponse
+import net.artux.ailingo.server.model.LoginRequest
+import net.artux.ailingo.server.model.LoginResponse
+import net.artux.ailingo.server.model.RegisterResponse
+import net.artux.ailingo.server.model.ResendVerificationCodeRequest
+import net.artux.ailingo.server.model.Role
+import net.artux.ailingo.server.model.VerificationRequest
+import net.artux.ailingo.server.repository.PendingUserRepository
+import net.artux.ailingo.server.repository.UserRepository
+import net.artux.ailingo.server.service.EmailService
+import net.artux.ailingo.server.service.UserService
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.*
+import kotlin.math.abs
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
-
-    private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
-    private final UserRepository userRepository;
-    private final UserValidator userValidator;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final AuthenticationManager authenticationManager;
-    private final RegistrationConfig registrationConfig;
+class UserServiceImpl(
+    private val userRepository: UserRepository,
+    private val userValidator: UserValidator,
+    private val passwordEncoder: PasswordEncoder,
+    private val jwtUtil: JwtUtil,
+    private val emailService: EmailService,
+    private val authenticationManager: AuthenticationManager,
+    private val pendingUserRepository: PendingUserRepository
+) : UserService {
+    private val logger: Logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
 
     @PostConstruct
-    public void init() {
-        if (userRepository.count() == 0) {
-            RegisterUserDto registerUserDto = new RegisterUserDto("admin", "pass", "test@test.com", "admin", "");
-            UserEntity userEntity = new UserEntity(registerUserDto, passwordEncoder);
-            userEntity.setRole(Role.ADMIN);
-            userRepository.save(userEntity);
+    fun initAdminUser() {
+        if (userRepository.count() == 0L) {
+            val registerUserDto = RegisterUserDto("admin", "admin", "test@test.net", "admin")
+            val userEntity = UserEntity(
+                null,
+                registerUserDto.login,
+                registerUserDto.email,
+                passwordEncoder.encode(registerUserDto.password),
+                registerUserDto.name,
+                null
+            )
+            userEntity.role = Role.ADMIN
+            userEntity.isEmailVerified = true
+            userRepository.save(userEntity)
+            logger.info("Default admin user created successfully.")
+        } else {
+            logger.info("Users already exist, skipping default admin user creation.")
         }
     }
 
-    @Override
-    public RegisterResponse registerUser(RegisterUserDto newUser) {
-        if (newUser == null) {
-            throw new IllegalArgumentException("Данные пользователя не могут быть пустыми.");
+    override fun registerUser(registerUser: RegisterUserDto): RegisterResponse {
+        val email = registerUser.email.lowercase(Locale.getDefault())
+
+        userValidator.validateUserRegistration(registerUser)
+
+        if (userRepository.findByLogin(registerUser.login).isPresent) {
+            throw InvalidRequestException(GlobalExceptionHandler.USER_ALREADY_EXISTS_MESSAGE + " Login already exists.")
+        }
+        if (userRepository.findMemberByEmail(email).isPresent || pendingUserRepository.findByEmail(email).isPresent) { // Проверяем и временных пользователей
+            throw InvalidRequestException(GlobalExceptionHandler.USER_ALREADY_EXISTS_MESSAGE + " Email already exists.")
         }
 
-        String email = newUser.getEmail().toLowerCase();
+        val verificationCode = generateVerificationCode()
+        val password = passwordEncoder.encode(registerUser.password)
 
-        Set<String> allowedEmails = registrationConfig.getAllowedEmails();
-        if (!email.endsWith("@artux.net") && !allowedEmails.contains(email)) {
-            throw new IllegalArgumentException("Регистрация разрешена только для почт с доменом @artux.net или для конкретных адресов.");
+        val pendingUserEntity = PendingUserEntity(
+            login = registerUser.login,
+            name = registerUser.name,
+            email = email,
+            password = password,
+            verificationCode = verificationCode
+        )
+
+        pendingUserRepository.save(pendingUserEntity)
+
+        try {
+            emailService.sendVerificationEmail(email, verificationCode)
+        } catch (e: Exception) {
+            pendingUserRepository.delete(pendingUserEntity)
+            logger.error("Ошибка при отправке email верификации для пользователя {}: {}", email, e.message)
+            throw InvalidRequestException(GlobalExceptionHandler.EMAIL_SENDING_FAILED_MESSAGE)
         }
 
-        Status status = userValidator.checkUser(newUser);
-        if (!status.isSuccess()) {
-            throw new IllegalArgumentException(status.getDescription());
+        return RegisterResponse("", "", null)
+    }
+
+    override fun login(request: LoginRequest): LoginResponse {
+        try {
+            authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(request.login, request.password)
+            )
+        } catch (e: Exception) {
+            throw InvalidRequestException("Неверный логин или пароль.")
         }
+        val user = userRepository.findByLogin(request.login).orElseThrow()
 
-        UserEntity userEntity = saveUser(newUser);
-        String jwtToken = jwtUtil.generateToken(userEntity);
-        String refreshToken = jwtUtil.generateRefreshToken(userEntity);
+        val accessToken = jwtUtil.generateToken(user)
+        val refreshToken = jwtUtil.generateRefreshToken(user)
 
-        logger.info("Пользователь {} ({}) зарегистрирован.", userEntity.getLogin(), userEntity.getName());
-
-        return new RegisterResponse(jwtToken, refreshToken, dto(userEntity));
+        return LoginResponse(accessToken, refreshToken, dto(user))
     }
 
-    @Override
-    public LoginResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getLogin(), request.getPassword())
-        );
-        var user = userRepository.findByLogin(request.getLogin()).orElseThrow();
-
-        String accessToken = jwtUtil.generateToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-
-        return new LoginResponse(accessToken, refreshToken, dto(user));
+    override fun refreshToken(request: RefreshTokenRequest): RefreshTokenResponse {
+        return jwtUtil.refreshToken(request.refreshToken)
+            ?: throw InvalidRequestException("Токен обновления неверный или истек")
     }
 
-    @Override
-    public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
-        RefreshTokenResponse response = jwtUtil.refreshToken(request.getRefreshToken());
+    override fun getUserLogin(): String {
+        return SecurityContextHolder.getContext().authentication.name
+    }
 
-        if (response == null) {
-            throw new IllegalArgumentException("Refresh token is invalid or expired.");
+    override fun getCurrentUser(): UserEntity {
+        val login = getUserLogin()
+        return userRepository.findByLogin(login)
+            .orElseThrow { IllegalStateException("Пользователь с логином $login не найден") }
+
+    }
+
+    override fun getUserDto(): UserDto {
+        return dto(getCurrentUser())
+    }
+
+    companion object {
+        fun dto(userEntity: UserEntity): UserDto {
+            return UserDto(
+                userEntity.id,
+                userEntity.login ?: "",
+                userEntity.name ?: "",
+                userEntity.email ?: "",
+                userEntity.avatar,
+                userEntity.xp,
+                userEntity.coins,
+                userEntity.streak,
+                userEntity.registration,
+                userEntity.lastLoginAt,
+                userEntity.isEmailVerified
+            )
         }
-        return response;
     }
 
-    public UserEntity saveUser(RegisterUserDto registerUserDto) {
-        UserEntity userEntity = new UserEntity(registerUserDto, passwordEncoder);
-        return userRepository.save(userEntity);
-    }
+    override fun changeUserStreak() {
+        val yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
+        val today = Instant.now().truncatedTo(ChronoUnit.DAYS)
+        val currentUser = getCurrentUser()
+        val lastStrikeAt =
+            currentUser.lastSession?.truncatedTo(ChronoUnit.DAYS) ?: Instant.EPOCH // Handle null lastSession
 
-    @Override
-    public List<UserEntity> getUsersByIds(Collection<UUID> ids) {
-        return userRepository.findAllById(ids);
-    }
-
-    public String getUserLogin() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
-
-    @Override
-    public UserEntity getCurrentUser() {
-        UserEntity userEntity = userRepository.findByLogin(getUserLogin()).orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-        if (userEntity.getLastLoginAt().plusSeconds(300).isBefore(Instant.now())) {
-            userEntity.setLastLoginAt(Instant.now());
-            return userRepository.save(userEntity);
-        } else return userEntity;
-    }
-
-    @Override
-    public UserDto getUserDto() {
-        return dto(getCurrentUser());
-    }
-
-    @Override
-    public Optional<UserEntity> getUserByEmail(String email) {
-        return userRepository.findMemberByEmail(email);
-    }
-
-    @Override
-    public UserEntity getUserByLogin(String login) {
-        return userRepository.findByLogin(login).orElseThrow(() -> new RuntimeException("Пользователя не существует"));
-    }
-
-    public static UserDto dto(UserEntity userEntity) {
-        return new UserDto(userEntity.getId(), userEntity.getLogin(), userEntity.getName(), userEntity.getEmail(), userEntity.getAvatar(),
-                userEntity.getXp(), userEntity.getCoins(), userEntity.getStreak(),
-                userEntity.getRegistration(), userEntity.getLastLoginAt());
-    }
-
-    @Override
-    public Set<TopicEntity> getUserSavedTopics() {
-        UserEntity currentUser = getCurrentUser();
-        Set<TopicEntity> savedTopics = new HashSet<>();
-        currentUser.getSavedTopics().forEach(savedTopicsEntity -> savedTopics.addAll(savedTopicsEntity.getSavedTopics()));
-        return savedTopics;
-    }
-
-    @Override
-    public void saveUserTopics(Set<TopicEntity> topics) {
-        UserEntity currentUser = getCurrentUser();
-        SavedTopicsEntity savedTopicsEntity = new SavedTopicsEntity();
-        savedTopicsEntity.setUser(currentUser);
-        savedTopicsEntity.setSavedTopics(topics);
-        currentUser.getSavedTopics().add(savedTopicsEntity);
-        userRepository.save(currentUser);
-    }
-
-    public void changeUserStreak() {
-        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
-        Instant today = Instant.now().truncatedTo(ChronoUnit.DAYS);
-        UserEntity currentUser = getCurrentUser();
-        Instant lastStrikeAt = currentUser.getLastSession().truncatedTo(ChronoUnit.DAYS);
         if (lastStrikeAt.isBefore(yesterday)) {
-            currentUser.setStreak(0);
+            currentUser.streak = 0
         } else {
             if (lastStrikeAt != today) {
-                currentUser.setStreak(currentUser.getStreak() + 1);
-                currentUser.setLastSession(today);
+                currentUser.streak += 1
+                currentUser.lastSession = today
             }
         }
-        userRepository.save(currentUser);
+        userRepository.save(currentUser)
     }
 
-    @Override
-    public void removeUserTopic(TopicEntity topic) {
-        UserEntity currentUser = getCurrentUser();
-        currentUser.getSavedTopics().removeIf(savedTopicsEntity -> savedTopicsEntity.getSavedTopics().contains(topic));
-        userRepository.save(currentUser);
-    }
 
-    public Status addWordToFavorites(String word) {
-        UserEntity currentUser = getCurrentUser();
-        currentUser.getFavoriteWords().add(word);
-        userRepository.save(currentUser);
-        return new Status(true, "Слово добавлено в избранное.");
-    }
+    override fun changeCoinsForCurrentUser(amount: Int): ChangeCoinsResponse {
+        val user = getCurrentUser()
+        val response = ChangeCoinsResponse()
 
-    public Status removeWordFromFavorites(String word) {
-        UserEntity currentUser = getCurrentUser();
-        currentUser.getFavoriteWords().remove(word);
-        userRepository.save(currentUser);
-        return new Status(true, "Слово удалено из избранного.");
-    }
-
-    public Set<String> getFavoriteWords() {
-        return getCurrentUser().getFavoriteWords();
-    }
-
-    public Status changeCoinsForCurrentUser(int amount) {
-        UserEntity user = getCurrentUser();
         if (amount > 0) {
-            user.changeCoins(amount);
-            userRepository.save(user);
-            return new Status(true, "Монеты зачислены.");
+            user.changeCoins(amount)
+            userRepository.save(user)
+            response.success = true
+            response.message = "Успешно зачислено $amount монет."
+            response.newBalance = user.coins
+            return response
         } else {
-            if (user.getCoins() < Math.abs(amount)) {
-                return new Status(false, "Недостаточно монет.");
+            if (user.coins < abs(amount)) {
+                response.success = false
+                response.message = "Недостаточно монет."
+                response.newBalance = user.coins
+                return response
             } else {
-                user.changeCoins(amount);
-                userRepository.save(user);
-                return new Status(true, "Топик получен.");
+                user.changeCoins(amount)
+                userRepository.save(user)
+                response.success = true
+                response.message = "Успешно списано ${Math.abs(amount)} монет."
+                response.newBalance = user.coins
+                return response
             }
         }
     }
 
-    @Override
-    public Status updateUserProfile(UpdateUserProfileDto updateUserProfile) {
-        if (updateUserProfile == null) {
-            return new Status(false, "Данные для обновления не переданы.");
+    override fun updateUserProfile(updateUserProfile: UpdateUserProfileDto?): UserDto {
+        updateUserProfile ?: throw InvalidRequestException("Данные для обновления не переданы.")
+
+        val currentUser = getCurrentUser()
+        var isUpdated = false
+
+        if (!updateUserProfile.newPassword.isNullOrBlank()) {
+            if (updateUserProfile.oldPassword.isNullOrBlank()) {
+                throw InvalidRequestException("Для изменения пароля необходимо указать старый пароль.")
+            }
+            try {
+                authenticationManager.authenticate(
+                    UsernamePasswordAuthenticationToken(
+                        currentUser.login,
+                        updateUserProfile.oldPassword
+                    )
+                )
+            } catch (e: Exception) {
+                throw InvalidRequestException("Неверный старый пароль.")
+            }
+            userValidator.validatePassword(updateUserProfile.newPassword)
+            currentUser.password = passwordEncoder.encode(updateUserProfile.newPassword)
+            isUpdated = true
         }
 
-        UserEntity currentUser = getCurrentUser();
+        if (updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
+            updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
+            updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
+        ) {
 
-        boolean isUpdated = false;
-
-        if (!updateUserProfile.getName().equals(currentUser.getName())) {
-            Status nameStatus = userValidator.checkName(updateUserProfile.getName());
-            if (!nameStatus.isSuccess()) {
-                return nameStatus;
+            if (updateUserProfile.oldPassword.isNullOrBlank() && (
+                        updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
+                                updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
+                                updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar)
+            ) {
+                throw InvalidRequestException("Для изменения данных профиля необходимо указать текущий пароль.")
             }
 
-            currentUser.setName(updateUserProfile.getName());
-            isUpdated = true;
-        }
-
-        if (!updateUserProfile.getEmail().equals(currentUser.getEmail())) {
-            Status emailStatus = userValidator.checkEmail(updateUserProfile.getEmail());
-            if (!emailStatus.isSuccess()) {
-                return emailStatus;
+            if (!updateUserProfile.oldPassword.isNullOrBlank()) {
+                try {
+                    authenticationManager.authenticate(
+                        UsernamePasswordAuthenticationToken(currentUser.login, updateUserProfile.oldPassword)
+                    )
+                } catch (e: Exception) {
+                    throw InvalidRequestException("Неверный старый пароль.")
+                }
             }
 
-            currentUser.setEmail(updateUserProfile.getEmail());
-            isUpdated = true;
-        }
+            if (updateUserProfile.name != null && updateUserProfile.name != currentUser.name) {
+                userValidator.validateName(updateUserProfile.name)
+                currentUser.name = updateUserProfile.name
+                isUpdated = true
+            }
 
-        if (!updateUserProfile.getAvatar().equals(currentUser.getAvatar())) {
-            currentUser.setAvatar(updateUserProfile.getAvatar());
-            isUpdated = true;
+            if (updateUserProfile.email != null && updateUserProfile.email != currentUser.email) {
+                userValidator.validateEmail(updateUserProfile.email)
+                currentUser.email = updateUserProfile.email
+                isUpdated = true
+            }
+
+            if (updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar) {
+                currentUser.avatar = updateUserProfile.avatar
+                isUpdated = true
+            }
         }
 
         if (!isUpdated) {
-            return new Status(false, "Нет изменений для обновления.");
+            logger.warn("Нет изменений для обновления профиля пользователя {}.", currentUser.login)
+            throw InvalidRequestException("Нет изменений для обновления.")
         }
 
-        userRepository.save(currentUser);
-        return new Status(true, "Профиль успешно обновлен.");
+        userRepository.save(currentUser)
+        logger.info("Профиль пользователя {} успешно обновлен.", currentUser.login)
+        return dto(currentUser)
     }
 
-    @Override
-    public Status changePassword(String oldPassword, String newPassword) {
-        UserEntity currentUser = getCurrentUser();
+    override fun verifyEmail(verificationRequest: VerificationRequest): UserDto {
+        val email = verificationRequest.email.lowercase(Locale.getDefault())
+        val verificationCode = verificationRequest.verificationCode
 
-        if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
-            return new Status(false, "Старый пароль введен неверно.");
+        val pendingUser = pendingUserRepository.findByVerificationCode(verificationCode)
+            .orElseThrow { InvalidRequestException(GlobalExceptionHandler.INVALID_VERIFICATION_CODE_MESSAGE) }
+
+        if (pendingUser.email != email) {
+            throw InvalidRequestException(GlobalExceptionHandler.INVALID_VERIFICATION_CODE_MESSAGE)
         }
+        val userEntity = UserEntity(
+            null,
+            pendingUser.login,
+            pendingUser.email,
+            pendingUser.password,
+            pendingUser.name,
+            null
+        )
+        userEntity.registration = Instant.now()
+        userEntity.isEmailVerified = true
+        userRepository.save(userEntity)
 
-        if (passwordEncoder.matches(newPassword, currentUser.getPassword())) {
-            return new Status(false, "Новый пароль не должен совпадать с текущим.");
-        }
+        pendingUserRepository.delete(pendingUser)
 
-        Status status = userValidator.checkPassword(newPassword);
-        if (!status.isSuccess()) {
-            return status;
-        }
-
-        currentUser.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(currentUser);
-        return new Status(true, "Пароль успешно изменен.");
+        return dto(userEntity)
     }
 
-    @Override
-    public void saveUserChat(UserEntity user, String chatContent) {
-        ChatHistoryEntity chat = new ChatHistoryEntity();
-        chat.setUser(user);
-        chat.setChatContent(chatContent);
-        user.getChatHistory().add(chat);
-        userRepository.save(user);
-    }
+    override fun resendVerificationCode(resendVerificationCodeRequest: ResendVerificationCodeRequest) {
+        val email = resendVerificationCodeRequest.email.lowercase(Locale.getDefault())
 
-    @Override
-    public List<ChatHistoryEntity> getUserChats(UserEntity user) {
-        return new ArrayList<>(user.getChatHistory());
+        val user = userRepository.findMemberByEmail(email)
+            .orElseThrow { InvalidRequestException(GlobalExceptionHandler.USER_NOT_FOUND) }
+
+        if (user.isEmailVerified) {
+            throw InvalidRequestException(GlobalExceptionHandler.EMAIL_ALREADY_VERIFIED_MESSAGE)
+        }
+
+        val newVerificationCode = generateVerificationCode()
+        user.verificationCode = newVerificationCode
+        userRepository.save(user)
+
+        try {
+            emailService.sendVerificationEmail(email, newVerificationCode)
+        } catch (e: Exception) {
+            logger.error("Ошибка при повторной отправке email верификации для пользователя {}: {}", email, e.message)
+            throw InvalidRequestException(GlobalExceptionHandler.EMAIL_SENDING_FAILED_MESSAGE)
+        }
     }
 }

@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "add email verification column"
+      id: 20250204-1
+      changes:
+        - sqlFile:
+            path: add_email_verification_column.sql
+            relativeToChangelogFile: true

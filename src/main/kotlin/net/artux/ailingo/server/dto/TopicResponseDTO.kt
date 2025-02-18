@@ -1,0 +1,8 @@
+package net.artux.ailingo.server.dto
+
+data class TopicResponseDTO(
+    val id: Long,
+    val name: String,
+    val imageUrl: String,
+    val price: Int
+)

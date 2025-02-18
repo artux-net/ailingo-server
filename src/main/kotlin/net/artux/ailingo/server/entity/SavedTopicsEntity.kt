@@ -1,31 +1,33 @@
-package net.artux.ailingo.server.entity;
+package net.artux.ailingo.server.entity
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import net.artux.ailingo.server.entity.user.UserEntity;
-
-import java.util.HashSet;
-import java.util.Set;
-
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.JoinTable
+import jakarta.persistence.ManyToMany
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
 
 @Entity
-@Getter
-@Setter
 @Table(name = "saved_topics")
-public class SavedTopicsEntity {
+class SavedTopicsEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    var id: Long? = null
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private UserEntity user;
+    var user: UserEntity? = null
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "user_saved_topics",
-            joinColumns = @JoinColumn(name = "saved_topics_id"),
-            inverseJoinColumns = @JoinColumn(name = "topic_id"))
-    private Set<TopicEntity> savedTopics = new HashSet<>();
+    @JoinTable(
+        name = "user_saved_topics",
+        joinColumns = [JoinColumn(name = "saved_topics_id")],
+        inverseJoinColumns = [JoinColumn(name = "topic_id")]
+    )
+    var savedTopics: MutableList<TopicEntity> = mutableListOf()
 }
