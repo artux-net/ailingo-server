@@ -15,7 +15,7 @@ import org.springframework.ai.chat.messages.Message
 import org.springframework.ai.chat.messages.MessageType
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.UserMessage
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder
+import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -33,7 +33,7 @@ class ChatServiceImpl(
         val historyMessage = HistoryMessageEntity().apply {
             this.topic = topic
             this.conversationId = UUID.randomUUID()
-            this.content = createMessage(topic, emptyList(), null)?.content
+            this.content = createMessage(topic, emptyList(), null)?.text
             this.type = MessageType.SYSTEM
             this.owner = userService.currentUser
         }
@@ -51,7 +51,7 @@ class ChatServiceImpl(
             historyRepository.save(HistoryMessageEntity().apply {
                 this.topic = topic
                 this.conversationId = chatId
-                this.content = message?.content
+                this.content = message?.text
                 this.owner = userService.currentUser
             })
         } else {
@@ -60,7 +60,7 @@ class ChatServiceImpl(
             historyRepository.save(HistoryMessageEntity().apply {
                 this.topic = topic
                 this.conversationId = chatId
-                this.content = message?.content
+                this.content = message?.text
                 this.owner = userService.currentUser
             })
         }
@@ -127,7 +127,7 @@ class ChatServiceImpl(
         return request.call().content() ?: throw Exception("Can not get response from OpenAI")
     }
 
-    private fun getOptions(topic: TopicEntity) = ChatOptionsBuilder.builder().withMaxTokens(200).build()
+    private fun getOptions(topic: TopicEntity) = DefaultChatOptionsBuilder().maxTokens(200).build()
 
     companion object {
         const val STOP_CONVERSATION_PROMPT = "Now you have to stop the conversation and leave, DO NOT TELL ANYONE more"
