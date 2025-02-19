@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "create message history table"
+      id: 20250219-1
+      changes:
+        - sqlFile:
+            path: create_message_history_table.sql
+            relativeToChangelogFile: true

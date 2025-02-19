@@ -9,7 +9,7 @@ import java.util.UUID;
 @Getter
 public class SecurityUser extends User {
 
-    public SecurityUser(Long id, UserDetails details) {
+    public SecurityUser(UUID id, UserDetails details) {
         super(details.getUsername(), details.getPassword(), details.getAuthorities());
     }
 }

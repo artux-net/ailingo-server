@@ -2,6 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 repositories {
     mavenCentral()
+    maven("https://repo.spring.io/milestone")
+    maven("https://repo.spring.io/snapshot")
 }
 
 plugins {
@@ -47,7 +49,9 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
 
     // ChatGPT
-    implementation("com.lilittlecat:chatgpt:1.0.3")
+    implementation(platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT"))
+    implementation("org.springframework.ai:spring-ai-spring-boot-autoconfigure")
+    implementation("org.springframework.ai:spring-ai-openai")
 
     // Mapstruct
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
@@ -63,6 +67,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
 
     // Tests
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
 
@@ -101,7 +106,7 @@ kapt {
     keepJavacAnnotationProcessors = true
 }
 
-tasks{
+tasks {
 
     withType<KotlinCompile> {
         kotlinOptions {
@@ -113,7 +118,4 @@ tasks{
     withType<Test> {
         useJUnitPlatform()
     }
-
 }
-
-

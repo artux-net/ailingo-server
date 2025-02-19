@@ -1,16 +1,15 @@
 package net.artux.ailingo.server.service.impl
 
-import net.artux.ailingo.server.entity.TopicEntity
 import net.artux.ailingo.server.dto.CreateTopicDTO
 import net.artux.ailingo.server.dto.TopicResponseDTO
 import net.artux.ailingo.server.dto.UpdateTopicDTO
+import net.artux.ailingo.server.entity.TopicEntity
 import net.artux.ailingo.server.repository.TopicRepository
 import net.artux.ailingo.server.service.TopicService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.lang.IllegalArgumentException
 
 @Service
 @Transactional
@@ -33,8 +32,9 @@ class TopicServiceImpl(
     override fun addTopic(createTopicDto: CreateTopicDTO): TopicEntity {
         val topic = TopicEntity().apply {
             name = createTopicDto.name
-            image = createTopicDto.imageUrl
+            image = createTopicDto.image
             price = createTopicDto.price
+            level = createTopicDto.level
         }
         return topicRepository.save(topic)
     }
@@ -44,8 +44,9 @@ class TopicServiceImpl(
         val topics = createTopicDTOs.map { dto ->
             TopicEntity().apply {
                 name = dto.name
-                image = dto.imageUrl
+                image = dto.image
                 price = dto.price
+                level = dto.level
             }
         }
         return topicRepository.saveAll(topics)
@@ -64,8 +65,7 @@ class TopicServiceImpl(
 
     @PreAuthorize("hasRole('ADMIN')")
     override fun deleteTopicByName(name: String) {
-        val topicToDelete = topicRepository.findByName(name) ?: throw IllegalArgumentException("Топик с именем $name не найден")
-        topicRepository.delete(topicToDelete)
+        topicRepository.deleteTopicByName(name)
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -9,6 +9,15 @@ server:
     protocol: ws
 
 spring:
+  ai:
+    openai:
+      api-key: key
+      chat:
+        options:
+          model: gpt-4o-mini
+  docker:
+    compose:
+      file: dev/docker-compose-local.yml
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   datasource:
@@ -30,8 +39,8 @@ spring:
   mail:
     host: smtp.mail.ru
     port: 587
-    username: letuchiy111@mail.ru
-    password: yDFThjF1kz2dNrji5HdX
+    username: letuchiy10000@mail.ru
+    password: qk8aGHiG1PEWRjetC1cN
     properties:
       mail:
         smtp:

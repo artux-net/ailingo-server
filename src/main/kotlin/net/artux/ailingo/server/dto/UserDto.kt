@@ -1,9 +1,11 @@
 package net.artux.ailingo.server.dto
 
+import net.artux.ailingo.server.model.Role
 import java.time.Instant
+import java.util.*
 
 data class UserDto(
-    val id: Long?,
+    val id: UUID?,
     val login: String = "",
     val name: String = "",
     val email: String = "",
@@ -14,4 +16,5 @@ data class UserDto(
     val registration: Instant?,
     val lastLoginAt: Instant? = null,
     val isEmailVerified: Boolean = false,
+    val role: Role
 )

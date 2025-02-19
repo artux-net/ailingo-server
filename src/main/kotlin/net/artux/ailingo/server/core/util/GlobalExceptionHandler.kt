@@ -86,7 +86,7 @@ class GlobalExceptionHandler {
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
         val errorResponse = ErrorResponse(
-            message = UNKNOWN_ERROR_MESSAGE,
+            message = UNKNOWN_ERROR_MESSAGE + " " +  ex.localizedMessage,
             status = HttpStatus.INTERNAL_SERVER_ERROR.value()
         )
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)

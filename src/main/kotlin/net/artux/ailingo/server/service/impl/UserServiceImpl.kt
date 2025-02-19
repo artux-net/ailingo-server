@@ -17,7 +17,6 @@ import net.artux.ailingo.server.jwt.util.JwtUtil
 import net.artux.ailingo.server.model.ChangeCoinsResponse
 import net.artux.ailingo.server.model.LoginRequest
 import net.artux.ailingo.server.model.LoginResponse
-import net.artux.ailingo.server.model.RegisterResponse
 import net.artux.ailingo.server.model.ResendVerificationCodeRequest
 import net.artux.ailingo.server.model.Role
 import net.artux.ailingo.server.model.VerificationRequest
@@ -28,6 +27,7 @@ import net.artux.ailingo.server.service.UserService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -37,6 +37,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.math.abs
+
 
 @Service
 @Transactional
@@ -55,7 +56,7 @@ class UserServiceImpl(
     @PostConstruct
     fun initAdminUser() {
         if (userRepository.count() == 0L) {
-            val registerUserDto = RegisterUserDto("admin", "admin", "test@test.net", "admin")
+            val registerUserDto = RegisterUserDto("admin", "password", "test@test.net", "admin")
             val userEntity = UserEntity(
                 null,
                 registerUserDto.login,
@@ -73,16 +74,24 @@ class UserServiceImpl(
         }
     }
 
-    override fun registerUser(registerUser: RegisterUserDto): RegisterResponse {
+    override fun registerUser(registerUser: RegisterUserDto) {
         val email = registerUser.email.lowercase(Locale.getDefault())
 
         userValidator.validateUserRegistration(registerUser)
 
         if (userRepository.findByLogin(registerUser.login).isPresent) {
-            throw InvalidRequestException(GlobalExceptionHandler.USER_ALREADY_EXISTS_MESSAGE + " Login already exists.")
+            throw InvalidRequestException(GlobalExceptionHandler.USER_ALREADY_EXISTS_MESSAGE)
         }
-        if (userRepository.findMemberByEmail(email).isPresent || pendingUserRepository.findByEmail(email).isPresent) { // Проверяем и временных пользователей
-            throw InvalidRequestException(GlobalExceptionHandler.USER_ALREADY_EXISTS_MESSAGE + " Email already exists.")
+        val existingUser = userRepository.findMemberByEmail(email)
+        if (existingUser.isPresent) {
+            throw InvalidRequestException(GlobalExceptionHandler.USER_ALREADY_EXISTS_MESSAGE)
+        }
+
+        val existingPendingUser = pendingUserRepository.findByEmail(email)
+
+        if (existingPendingUser.isPresent) {
+            pendingUserRepository.delete(existingPendingUser.get())
+            logger.info("Удалена старая pending запись для email: {}", email)
         }
 
         val verificationCode = generateVerificationCode()
@@ -105,8 +114,6 @@ class UserServiceImpl(
             logger.error("Ошибка при отправке email верификации для пользователя {}: {}", email, e.message)
             throw InvalidRequestException(GlobalExceptionHandler.EMAIL_SENDING_FAILED_MESSAGE)
         }
-
-        return RegisterResponse("", "", null)
     }
 
     override fun login(request: LoginRequest): LoginResponse {
@@ -114,14 +121,17 @@ class UserServiceImpl(
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(request.login, request.password)
             )
-        } catch (e: Exception) {
+        } catch (e: BadCredentialsException) {
             throw InvalidRequestException("Неверный логин или пароль.")
+        } catch (e: Exception) {
+            logger.error("Ошибка при аутентификации пользователя {}: {}", request.login, e.message, e)
+            throw InvalidRequestException("Ошибка при входе в систему. Попробуйте позже.")
         }
         val user = userRepository.findByLogin(request.login).orElseThrow()
-
         val accessToken = jwtUtil.generateToken(user)
         val refreshToken = jwtUtil.generateRefreshToken(user)
-
+        user.lastLoginAt = Instant.now()
+        userRepository.save(user)
         return LoginResponse(accessToken, refreshToken, dto(user))
     }
 
@@ -138,7 +148,6 @@ class UserServiceImpl(
         val login = getUserLogin()
         return userRepository.findByLogin(login)
             .orElseThrow { IllegalStateException("Пользователь с логином $login не найден") }
-
     }
 
     override fun getUserDto(): UserDto {
@@ -158,7 +167,8 @@ class UserServiceImpl(
                 userEntity.streak,
                 userEntity.registration,
                 userEntity.lastLoginAt,
-                userEntity.isEmailVerified
+                userEntity.isEmailVerified,
+                userEntity.role
             )
         }
     }
@@ -167,8 +177,7 @@ class UserServiceImpl(
         val yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
         val today = Instant.now().truncatedTo(ChronoUnit.DAYS)
         val currentUser = getCurrentUser()
-        val lastStrikeAt =
-            currentUser.lastSession?.truncatedTo(ChronoUnit.DAYS) ?: Instant.EPOCH // Handle null lastSession
+        val lastStrikeAt = currentUser.lastSession?.truncatedTo(ChronoUnit.DAYS) ?: Instant.EPOCH
 
         if (lastStrikeAt.isBefore(yesterday)) {
             currentUser.streak = 0
@@ -180,7 +189,6 @@ class UserServiceImpl(
         }
         userRepository.save(currentUser)
     }
-
 
     override fun changeCoinsForCurrentUser(amount: Int): ChangeCoinsResponse {
         val user = getCurrentUser()
@@ -286,7 +294,7 @@ class UserServiceImpl(
         return dto(currentUser)
     }
 
-    override fun verifyEmail(verificationRequest: VerificationRequest): UserDto {
+    override fun verifyEmail(verificationRequest: VerificationRequest): LoginResponse {
         val email = verificationRequest.email.lowercase(Locale.getDefault())
         val verificationCode = verificationRequest.verificationCode
 
@@ -310,7 +318,9 @@ class UserServiceImpl(
 
         pendingUserRepository.delete(pendingUser)
 
-        return dto(userEntity)
+        val accessToken = jwtUtil.generateToken(userEntity)
+        val refreshToken = jwtUtil.generateRefreshToken(userEntity)
+        return LoginResponse(accessToken, refreshToken, dto(userEntity))
     }
 
     override fun resendVerificationCode(resendVerificationCodeRequest: ResendVerificationCodeRequest) {
@@ -333,5 +343,21 @@ class UserServiceImpl(
             logger.error("Ошибка при повторной отправке email верификации для пользователя {}: {}", email, e.message)
             throw InvalidRequestException(GlobalExceptionHandler.EMAIL_SENDING_FAILED_MESSAGE)
         }
+    }
+
+    override fun getUserByLogin(login: String): UserEntity {
+        return userRepository.findByLogin(login).orElseThrow { RuntimeException("Пользователя не существует") }
+    }
+
+    override fun getUsersByIds(ids: Collection<UUID>): List<UserEntity> {
+        return userRepository.findAllById(ids)
+    }
+
+    fun dto(userEntity: UserEntity): UserDto {
+        return UserDto(
+            userEntity.id, userEntity.login, userEntity.name, userEntity.email, userEntity.avatar,
+            userEntity.xp, userEntity.coins, userEntity.streak,
+            userEntity.registration, userEntity.lastLoginAt, userEntity.isEmailVerified, userEntity.role
+        )
     }
 }

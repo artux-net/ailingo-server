@@ -2,20 +2,26 @@ package net.artux.ailingo.server.controller
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import net.artux.ailingo.server.dto.RegisterUserDto
+import net.artux.ailingo.server.dto.UpdateUserProfileDto
+import net.artux.ailingo.server.dto.UserDto
 import net.artux.ailingo.server.jwt.model.RefreshTokenRequest
 import net.artux.ailingo.server.jwt.model.RefreshTokenResponse
 import net.artux.ailingo.server.model.ChangeCoinsResponse
 import net.artux.ailingo.server.model.LoginRequest
 import net.artux.ailingo.server.model.LoginResponse
-import net.artux.ailingo.server.model.RegisterResponse
 import net.artux.ailingo.server.model.ResendVerificationCodeRequest
 import net.artux.ailingo.server.model.VerificationRequest
-import net.artux.ailingo.server.dto.RegisterUserDto
-import net.artux.ailingo.server.dto.UpdateUserProfileDto
-import net.artux.ailingo.server.dto.UserDto
 import net.artux.ailingo.server.service.UserService
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 
 @Tag(name = "Пользователь")
@@ -27,9 +33,9 @@ class UserController(
 ) {
     @Operation(summary = "Регистрация")
     @PostMapping("/register")
-    fun registerUser(@RequestBody registerUser: RegisterUserDto): ResponseEntity<RegisterResponse> {
-        val response = userService.registerUser(registerUser)
-        return ResponseEntity.ok(response)
+    fun registerUser(@RequestBody registerUser: RegisterUserDto): ResponseEntity<Void> {
+        userService.registerUser(registerUser)
+        return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
     @Operation(summary = "Авторизация")
@@ -69,7 +75,7 @@ class UserController(
 
     @Operation(summary = "Верификация email пользователя")
     @PostMapping("/verify-email")
-    fun verifyEmail(@RequestBody verificationRequest: VerificationRequest): ResponseEntity<UserDto> {
+    fun verifyEmail(@RequestBody verificationRequest: VerificationRequest): ResponseEntity<LoginResponse> {
         val user = userService.verifyEmail(verificationRequest)
         return ResponseEntity.ok(user)
     }
