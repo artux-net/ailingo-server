@@ -10,21 +10,21 @@ import java.util.List;
 @Data
 public class ChatUpdate {
 
-    private List<MessageDTO> updates;
+    private List<MessageDto> updates;
     private List<ChatEvent> events;
     private Instant timestamp;
 
-    public ChatUpdate(List<MessageDTO> updates, List<ChatEvent> events) {
+    public ChatUpdate(List<MessageDto> updates, List<ChatEvent> events) {
         this.updates = updates;
         this.events = events;
         this.timestamp = Instant.now();
     }
 
-    public static ChatUpdate of(List<MessageDTO> messages) {
+    public static ChatUpdate of(List<MessageDto> messages) {
         return new ChatUpdate(messages, new LinkedList<>());
     }
 
-    public static ChatUpdate of(MessageDTO message) {
+    public static ChatUpdate of(MessageDto message) {
         return new ChatUpdate(Collections.singletonList(message), new LinkedList<>());
     }
 
@@ -41,10 +41,9 @@ public class ChatUpdate {
     }
 
     public ChatUpdate asOld() {
-        for (MessageDTO message : updates) {
-            message.setType(MessageDTO.Type.OLD);
+        for (MessageDto message : updates) {
+            message.setType(MessageDto.Type.OLD);
         }
         return this;
     }
-
 }

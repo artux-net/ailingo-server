@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "pendingUsers"
+      id: 20251802-1
+      changes:
+        - sqlFile:
+            path: create_pending_users_table.sql
+            relativeToChangelogFile: true

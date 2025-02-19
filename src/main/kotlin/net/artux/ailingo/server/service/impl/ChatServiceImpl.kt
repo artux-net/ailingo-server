@@ -1,132 +1,164 @@
 package net.artux.ailingo.server.service.impl
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.lilittlecat.chatgpt.offical.ChatGPT
-import com.lilittlecat.chatgpt.offical.entity.*
-import com.lilittlecat.chatgpt.offical.exception.BizException
-import com.lilittlecat.chatgpt.offical.exception.Error
-import jakarta.annotation.PostConstruct
-import lombok.extern.slf4j.Slf4j
+import jakarta.transaction.Transactional
+import net.artux.ailingo.server.entity.HistoryMessageEntity
+import net.artux.ailingo.server.entity.MessageType
+import net.artux.ailingo.server.entity.TopicEntity
+import net.artux.ailingo.server.model.ConversationDto
+import net.artux.ailingo.server.model.ConversationMessageDto
+import net.artux.ailingo.server.model.PromptRequest
+import net.artux.ailingo.server.repository.MessageHistoryRepository
+import net.artux.ailingo.server.repository.TopicRepository
 import net.artux.ailingo.server.service.ChatService
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import net.artux.ailingo.server.service.UserService
+import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.messages.AssistantMessage
+import org.springframework.ai.chat.messages.Message
+import org.springframework.ai.chat.messages.SystemMessage
+import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder
+import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.stereotype.Service
-import java.io.IOException
-import java.util.*
+import java.util.UUID
 
 @Service
-@Slf4j
-class ChatServiceImpl(valuesService: ValuesService) : ChatService {
+@Transactional
+class ChatServiceImpl(
+    private val baseChatClient: ChatClient,
+    private val topicRepository: TopicRepository,
+    private val historyRepository: MessageHistoryRepository,
+    private val userService: UserService
+) : ChatService {
 
-    private final var apiKey = valuesService.chatToken
-    protected var client: OkHttpClient = OkHttpClient()
+    override fun startConversation(topicName: String): ConversationMessageDto {
+        val topic = topicRepository.findByName(topicName).orElseThrow()
+        val historyMessage = HistoryMessageEntity().apply {
+            this.topic = topic
+            this.conversationId = UUID.randomUUID()
+            this.content = createMessage(topic, emptyList(), null)?.text
+            this.type = MessageType.SYSTEM
+            this.owner = userService.getCurrentUser()
+        }
 
-    private lateinit var context: String
-    private lateinit var userRole: String
-    private lateinit var aiRole: String
-    private lateinit var chat: ChatGPT
-    private var history: LinkedList<Message> = LinkedList()
-    private var objectMapper: ObjectMapper = ObjectMapper()
-
-    @PostConstruct
-    fun init() {
-        chat = ChatGPT(apiKey)
-
-        setContext(
-            "You are waiter. User decide to go to a restaurant to enjoy delicious food and a pleasant atmosphere. " +
-                    "When User walked inside, the waiter greeted you and offered User a menu. " +
-                    "waiter was very friendly and willing to help you with your food choices. " +
-                    "User asked him questions about the composition of the dishes and asked about his recommendations. " +
-                    "After user placed order, the waiter went into the kitchen to give it to the chef. " +
-                    "User could relax and enjoy socializing with company at the table or simply enjoy the atmosphere of the restaurant. " +
-                    "When the dishes were ready, the waiter brought them to user table and checked if everything was fine. " +
-                    "User could ask him about how the dishes are prepared or ask for a recommendation for next time. " +
-                    "At the end of user meal, the waiter brought you the bill and helped you pay for it. " +
-                    "User could leave him a tip if you wanted and bid him farewell, knowing that your evening at the restaurant had gone well."
-        )
-        setUserRole("User")
-        setAIRole("Waiter")
+        return mapHistoryMessageEntityToConversationMessageDto(historyRepository.save(historyMessage))
     }
 
-    override fun setContext(context: String) {
-        this.context = context
-    }
+    override fun continueDialog(chatId: UUID, userInput: String): ConversationMessageDto {
+        val user = userService.getCurrentUser()
+        val messages = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
+        val topic = messages.firstOrNull()?.topic ?: throw IllegalStateException("Can not find topic for conversation")
+        val promptMessages = messages.map { mapHistoryMessageToMessage(it) }
 
-    fun clearContext() {
-        history.clear()
-        history.addFirst(Message.builder().role("system").content(context).build())
-    }
-
-    override fun setAIRole(aiRole: String) {
-        this.aiRole = "\n$aiRole: "
-    }
-
-    override fun setUserRole(userRole: String) {
-        this.userRole = "\n$userRole: "
-    }
-
-    fun makeCall(message: String): ChatCompletionResponseBody {
-        val message = Message.builder().role("user").content(message).build()
-        history.add(message)
-
-        val requestBody = ChatCompletionRequestBody.builder()
-            .model("gpt-3.5-turbo")
-            .messages(history)
-            .build()
-
-        val body: RequestBody =
-            objectMapper.writeValueAsString(requestBody)
-                .toRequestBody("application/json; charset=utf-8".toMediaType())
-
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-
-
-        val request: Request = Request.Builder()
-            .url("https://api.openai.com/v1/chat/completions")
-            .header("Authorization", "Bearer $apiKey")
-            .post(body)
-            .build()
-
-        try {
-            client.newCall(request).execute().use { response ->
-                return if (!response.isSuccessful) {
-                    if (response.body == null) {
-                        println("Request failed: ${response.message}, please try again")
-                        throw BizException(response.code, "Request failed")
-                    } else {
-                        println("Request failed: ${response.body!!.string()}, please try again")
-                        throw BizException(response.code, response.body!!.string())
-                    }
-                } else {
-                    val bodyString: String = response.body!!.string()
-                    objectMapper.readValue(
-                        bodyString,
-                        ChatCompletionResponseBody::class.java
-                    )
-                }
+        historyRepository.save(
+            HistoryMessageEntity().apply {
+                this.topic = topic
+                this.conversationId = chatId
+                this.content = userInput
+                this.owner = user
+                this.type = MessageType.USER
             }
-        } catch (e: IOException) {
-            println("Request failed: ${e.message}")
-            throw BizException(Error.SERVER_HAD_AN_ERROR.code, e.message)
+        )
+
+        val message = if (messages.size < topic.messageLimit) {
+            val message = createMessage(topic, promptMessages, userInput)
+            historyRepository.save(
+                HistoryMessageEntity().apply {
+                    this.topic = topic
+                    this.conversationId = chatId
+                    this.content = message?.text
+                    this.owner = user
+                    this.type = MessageType.ASSISTANT
+                }
+            )
+        } else {
+            val systemMessageToStop = SystemMessage(STOP_CONVERSATION_PROMPT)
+            val message = createMessage(topic, promptMessages + systemMessageToStop, userInput)
+            historyRepository.save(
+                HistoryMessageEntity().apply {
+                    this.topic = topic
+                    this.conversationId = chatId
+                    this.content = message?.text
+                    this.owner = user
+                    this.type = MessageType.FINAL
+                }
+            )
+        }
+
+        return mapHistoryMessageEntityToConversationMessageDto(message)
+    }
+
+    override fun getMessages(chatId: UUID): List<ConversationMessageDto> {
+        return historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, userService.getCurrentUser())
+            .map {
+                mapHistoryMessageEntityToConversationMessageDto(it)
+            }
+    }
+
+    override fun getConversations(): MutableList<ConversationDto> {
+        return historyRepository.findAllByOwner(userService.getCurrentUser())
+    }
+
+    private fun createMessage(topic: TopicEntity, messages: List<Message>, userInput: String?): AssistantMessage? {
+        val chatClient = baseChatClient.mutate()
+            .defaultSystem(topic.systemPrompt)
+            .defaultOptions(getOptions(topic))
+            .build()
+
+        val prompt = if (userInput != null) {
+            Prompt(messages + listOf(UserMessage(userInput)))
+        } else {
+            Prompt(listOf(SystemMessage(topic.welcomePrompt)))
+        }
+
+        return chatClient.prompt(prompt)
+            .call()
+            .chatResponse()
+            ?.result
+            ?.output
+    }
+
+    private fun mapHistoryMessageToMessage(historyMessage: HistoryMessageEntity): Message {
+        return when (historyMessage.type) {
+            MessageType.SYSTEM -> SystemMessage(historyMessage.content)
+            MessageType.USER -> UserMessage(historyMessage.content)
+            MessageType.ASSISTANT -> AssistantMessage(historyMessage.content)
+            MessageType.FINAL -> SystemMessage(historyMessage.content)
+            else -> throw IllegalArgumentException("Unknown message type")
         }
     }
 
+    override fun testPrompt(promptRequest: PromptRequest): String {
+        val builder = baseChatClient.mutate()
+            .defaultSystem(promptRequest.systemPrompt)
 
-    override fun getResponse(message: String): String {
-        val response = makeCall(message)
-        val choices: List<ChatCompletionResponseBody.Choice> = response.getChoices()
-        val result = StringBuilder()
-        for (choice in choices) {
-            result.append(choice.getMessage().getContent())
+        if (promptRequest.chatOptions != null) {
+            builder.defaultOptions(promptRequest.chatOptions)
         }
-        history.add(Message.builder().role("assistant").content(result.toString()).build())
-        if (history.size > 7)
-            history.removeAt(1)
 
-        return result.toString()
+        val chatClient = builder.build()
+        val request = chatClient.prompt(
+            Prompt(
+                UserMessage(promptRequest.userInput)
+            )
+        )
+
+        return request.call().content() ?: throw Exception("Can not get response from OpenAI")
+    }
+
+    // TODO take from topic
+    private fun getOptions(topic: TopicEntity) = DefaultChatOptionsBuilder().maxTokens(200).build()
+
+    companion object {
+        const val STOP_CONVERSATION_PROMPT = "Now you have to stop the conversation and leave, DO NOT TELL ANYONE more"
+    }
+
+    protected fun mapHistoryMessageEntityToConversationMessageDto(historyMessageEntity: HistoryMessageEntity): ConversationMessageDto {
+        return ConversationMessageDto(
+            historyMessageEntity.id.toString(),
+            historyMessageEntity.conversationId.toString(),
+            historyMessageEntity.content,
+            historyMessageEntity.timestamp,
+            historyMessageEntity.type
+        )
     }
 }

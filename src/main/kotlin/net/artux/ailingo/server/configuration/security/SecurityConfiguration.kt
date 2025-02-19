@@ -1,5 +1,6 @@
 package net.artux.ailingo.server.configuration.security
 
+import net.artux.ailingo.server.jwt.conf.JwtFilter
 import net.artux.ailingo.server.service.impl.UserDetailServiceImpl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -17,7 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true)
+@EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
 class SecurityConfiguration(
     private val jwtFilter: JwtFilter,
     private val userDetailService: UserDetailServiceImpl
@@ -37,10 +38,12 @@ class SecurityConfiguration(
             }
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authenticationProvider(DaoAuthenticationProvider().apply {
-                setUserDetailsService(userDetailService)
-                setPasswordEncoder(BCryptPasswordEncoder())
-            })
+            .authenticationProvider(
+                DaoAuthenticationProvider().apply {
+                    setUserDetailsService(userDetailService)
+                    setPasswordEncoder(BCryptPasswordEncoder())
+                }
+            )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()
     }
@@ -49,6 +52,8 @@ class SecurityConfiguration(
         private val WHITE_LIST = arrayOf(
             "/api/v1/user/login",
             "/api/v1/user/register",
+            "/api/v1/user/verify-email",
+            "/api/v1/user/resend-verification-code",
             "/api/v1/user/refresh-token",
             "/api/v1/user/reset/pass",
             "/api/v1/token",

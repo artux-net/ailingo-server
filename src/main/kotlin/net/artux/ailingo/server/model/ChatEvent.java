@@ -14,5 +14,4 @@ public class ChatEvent {
     public static ChatEvent of(String content) {
         return new ChatEvent(content);
     }
-
 }

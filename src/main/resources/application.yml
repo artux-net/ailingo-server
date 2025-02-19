@@ -9,6 +9,15 @@ server:
     protocol: ws
 
 spring:
+  ai:
+    openai:
+      api-key: key
+      chat:
+        options:
+          model: gpt-4o-mini
+  docker:
+    compose:
+      file: dev/docker-compose-local.yml
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   datasource:
@@ -27,6 +36,17 @@ spring:
     redis:
       port: 6379
       host: localhost
+  mail:
+    host: smtp.mail.ru
+    port: 587
+    username: letuchiy10000@mail.ru
+    password: qk8aGHiG1PEWRjetC1cN
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 registration:
   confirmation:
@@ -39,7 +59,7 @@ registration:
     - ariefymchenco@gmail.com
 
 jwt:
-  secret: lingo
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   expiration:
     900000
   refresh-token:
