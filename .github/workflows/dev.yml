@@ -29,6 +29,8 @@ jobs:
         env:
           CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME}}
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD}}
           SERVER_HOST: app.artux.net
           SERVER_PROTOCOL: https
           SERVER_WEBSOCKET_PROTOCOL: wss
@@ -38,5 +40,3 @@ jobs:
           docker compose down --remove-orphans
           docker system prune -a -f
           docker compose --profile prod up -d
-
-
