@@ -9,5 +9,4 @@ class AilingoServerApplicationTests : AbstractTest() {
     @Test
     fun contextLoads() {
     }
-
 }

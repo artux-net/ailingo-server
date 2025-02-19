@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 repositories {
@@ -10,15 +11,16 @@ plugins {
     id("org.springframework.boot") version "3.3.2"
     id("io.spring.dependency-management") version "1.1.4"
 
-    val kotlinVersion = "1.9.22"
+    val kotlinVersion = "2.0.10"
     kotlin("kapt") version kotlinVersion
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.spring") version "1.9.22"
-    kotlin("plugin.jpa") version "1.9.22"
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.spring") version kotlinVersion
+    kotlin("plugin.jpa") version kotlinVersion
     kotlin("plugin.lombok") version kotlinVersion
 
     id("java")
     id("io.freefair.lombok") version "8.1.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7"
 }
 
 group = "org.ailingo"
@@ -87,6 +89,12 @@ dependencies {
 
     // Redis
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
+}
+
+detekt {
+    autoCorrect = true
 }
 
 configurations {
@@ -109,9 +117,9 @@ kapt {
 tasks {
 
     withType<KotlinCompile> {
-        kotlinOptions {
-            freeCompilerArgs += "-Xjsr305=strict"
-            jvmTarget = javaVersion.toString()
+        compilerOptions {
+            freeCompilerArgs.add("-Xjsr305=strict")
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 

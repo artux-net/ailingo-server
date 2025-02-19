@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.core.service;
+package net.artux.ailingo.server.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Data;

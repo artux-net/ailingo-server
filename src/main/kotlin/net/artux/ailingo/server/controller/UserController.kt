@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-
 @Tag(name = "Пользователь")
 @CrossOrigin
 @RestController
@@ -82,7 +81,9 @@ class UserController(
 
     @Operation(summary = "Переотправка кода верификации email")
     @PostMapping("/resend-verification-code")
-    fun resendVerificationCode(@RequestBody resendVerificationCodeRequest: ResendVerificationCodeRequest): ResponseEntity<String> {
+    fun resendVerificationCode(
+        @RequestBody resendVerificationCodeRequest: ResendVerificationCodeRequest
+    ): ResponseEntity<String> {
         userService.resendVerificationCode(resendVerificationCodeRequest)
         return ResponseEntity.ok("Новый код верификации отправлен на ваш email")
     }

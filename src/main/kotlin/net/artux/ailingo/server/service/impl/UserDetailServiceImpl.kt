@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Component
 import java.time.Instant
-import java.util.*
+import java.util.Optional
 
 @Component
 @RequiredArgsConstructor
@@ -19,14 +19,16 @@ class UserDetailServiceImpl(
 ) : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
-        if (username.isBlank())
+        if (username.isBlank()) {
             throw UsernameNotFoundException("Access denied.")
+        }
 
         val userOptional: Optional<UserEntity> =
             if (username.contains("@")) {
                 userRepository.getByEmail(username)
-            } else
+            } else {
                 userRepository.getByLogin(username)
+            }
 
         if (userOptional.isPresent) {
             val simpleUser = userOptional.get()

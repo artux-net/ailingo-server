@@ -28,7 +28,7 @@ class EmailServiceImpl(
     
                 Если возникли проблемы с регистрацией, напишите на почту goida@gmail.com
                         
-            """.trimIndent()
+        """.trimIndent()
         message.from = mailUsername
 
         mailSender.send(message)

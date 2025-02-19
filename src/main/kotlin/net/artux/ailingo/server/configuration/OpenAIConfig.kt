@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.core.configuration
+package net.artux.ailingo.server.configuration
 
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.context.annotation.Bean

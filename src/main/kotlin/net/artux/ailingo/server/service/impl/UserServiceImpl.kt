@@ -2,10 +2,6 @@ package net.artux.ailingo.server.service.impl
 
 import jakarta.annotation.PostConstruct
 import lombok.RequiredArgsConstructor
-import net.artux.ailingo.server.core.util.GlobalExceptionHandler
-import net.artux.ailingo.server.core.util.InvalidRequestException
-import net.artux.ailingo.server.core.util.UserValidator
-import net.artux.ailingo.server.core.util.generateVerificationCode
 import net.artux.ailingo.server.dto.RegisterUserDto
 import net.artux.ailingo.server.dto.UpdateUserProfileDto
 import net.artux.ailingo.server.dto.UserDto
@@ -24,6 +20,9 @@ import net.artux.ailingo.server.repository.PendingUserRepository
 import net.artux.ailingo.server.repository.UserRepository
 import net.artux.ailingo.server.service.EmailService
 import net.artux.ailingo.server.service.UserService
+import net.artux.ailingo.server.util.GlobalExceptionHandler
+import net.artux.ailingo.server.util.InvalidRequestException
+import net.artux.ailingo.server.util.UserValidator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
@@ -33,11 +32,12 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.security.SecureRandom
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Locale
+import java.util.UUID
 import kotlin.math.abs
-
 
 @Service
 @Transactional
@@ -132,7 +132,8 @@ class UserServiceImpl(
         val refreshToken = jwtUtil.generateRefreshToken(user)
         user.lastLoginAt = Instant.now()
         userRepository.save(user)
-        return LoginResponse(accessToken, refreshToken, dto(user))
+
+        return LoginResponse(accessToken, refreshToken, getDto(user))
     }
 
     override fun refreshToken(request: RefreshTokenRequest): RefreshTokenResponse {
@@ -151,11 +152,11 @@ class UserServiceImpl(
     }
 
     override fun getUserDto(): UserDto {
-        return dto(getCurrentUser())
+        return getDto(getCurrentUser())
     }
 
     companion object {
-        fun dto(userEntity: UserEntity): UserDto {
+        fun getDto(userEntity: UserEntity): UserDto {
             return UserDto(
                 userEntity.id,
                 userEntity.login ?: "",
@@ -196,26 +197,25 @@ class UserServiceImpl(
 
         if (amount > 0) {
             user.changeCoins(amount)
-            userRepository.save(user)
             response.success = true
             response.message = "Успешно зачислено $amount монет."
             response.newBalance = user.coins
-            return response
+        } else if (user.coins < abs(amount)) {
+            response.success = false
+            response.message = "Недостаточно монет."
+            response.newBalance = user.coins
         } else {
-            if (user.coins < abs(amount)) {
-                response.success = false
-                response.message = "Недостаточно монет."
-                response.newBalance = user.coins
-                return response
-            } else {
-                user.changeCoins(amount)
-                userRepository.save(user)
-                response.success = true
-                response.message = "Успешно списано ${Math.abs(amount)} монет."
-                response.newBalance = user.coins
-                return response
-            }
+            user.changeCoins(amount)
+            response.success = true
+            response.message = "Успешно списано ${Math.abs(amount)} монет."
+            response.newBalance = user.coins
         }
+
+        if (response.success) {
+            userRepository.save(user)
+        }
+
+        return response
     }
 
     override fun updateUserProfile(updateUserProfile: UpdateUserProfileDto?): UserDto {
@@ -247,11 +247,11 @@ class UserServiceImpl(
             updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
             updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
         ) {
-
             if (updateUserProfile.oldPassword.isNullOrBlank() && (
                         updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
                                 updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
-                                updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar)
+                                updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
+                        )
             ) {
                 throw InvalidRequestException("Для изменения данных профиля необходимо указать текущий пароль.")
             }
@@ -291,7 +291,7 @@ class UserServiceImpl(
 
         userRepository.save(currentUser)
         logger.info("Профиль пользователя {} успешно обновлен.", currentUser.login)
-        return dto(currentUser)
+        return getDto(currentUser)
     }
 
     override fun verifyEmail(verificationRequest: VerificationRequest): LoginResponse {
@@ -320,7 +320,7 @@ class UserServiceImpl(
 
         val accessToken = jwtUtil.generateToken(userEntity)
         val refreshToken = jwtUtil.generateRefreshToken(userEntity)
-        return LoginResponse(accessToken, refreshToken, dto(userEntity))
+        return LoginResponse(accessToken, refreshToken, getDto(userEntity))
     }
 
     override fun resendVerificationCode(resendVerificationCodeRequest: ResendVerificationCodeRequest) {
@@ -353,11 +353,23 @@ class UserServiceImpl(
         return userRepository.findAllById(ids)
     }
 
-    fun dto(userEntity: UserEntity): UserDto {
-        return UserDto(
-            userEntity.id, userEntity.login, userEntity.name, userEntity.email, userEntity.avatar,
-            userEntity.xp, userEntity.coins, userEntity.streak,
-            userEntity.registration, userEntity.lastLoginAt, userEntity.isEmailVerified, userEntity.role
-        )
+    fun getDto(userEntity: UserEntity) = UserDto(
+        userEntity.id,
+        userEntity.login,
+        userEntity.name,
+        userEntity.email,
+        userEntity.avatar,
+        userEntity.xp,
+        userEntity.coins,
+        userEntity.streak,
+        userEntity.registration,
+        userEntity.lastLoginAt,
+        userEntity.isEmailVerified,
+        userEntity.role
+    )
+
+    private fun generateVerificationCode(): String {
+        val random = SecureRandom()
+        return String.format("%06d", random.nextInt(1000000))
     }
 }

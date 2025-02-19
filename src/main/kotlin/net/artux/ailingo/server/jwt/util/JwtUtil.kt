@@ -15,9 +15,8 @@ import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Service
 import java.security.Key
-import java.util.*
+import java.util.Date
 import java.util.concurrent.TimeUnit
-
 
 @Service
 class JwtUtil(
@@ -65,7 +64,7 @@ class JwtUtil(
             .setClaims(extraClaims)
             .setSubject(username)
             .setIssuedAt(Date(System.currentTimeMillis()))
-            .setExpiration(Date(System.currentTimeMillis() + refreshTokenExpiration)) //2 дня для refresh token
+            .setExpiration(Date(System.currentTimeMillis() + refreshTokenExpiration)) // 2 дня для refresh token
             .signWith(getSignInKey(), SignatureAlgorithm.HS256)
             .compact()
     }

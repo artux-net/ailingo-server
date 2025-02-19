@@ -2,7 +2,7 @@ package net.artux.ailingo.server.dto
 
 import net.artux.ailingo.server.model.Role
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 data class UserDto(
     val id: UUID?,

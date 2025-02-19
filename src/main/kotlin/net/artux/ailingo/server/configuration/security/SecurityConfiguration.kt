@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.core.configuration.security
+package net.artux.ailingo.server.configuration.security
 
 import net.artux.ailingo.server.jwt.conf.JwtFilter
 import net.artux.ailingo.server.service.impl.UserDetailServiceImpl
@@ -38,10 +38,12 @@ class SecurityConfiguration(
             }
             .formLogin { obj: FormLoginConfigurer<HttpSecurity> -> obj.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authenticationProvider(DaoAuthenticationProvider().apply {
-                setUserDetailsService(userDetailService)
-                setPasswordEncoder(BCryptPasswordEncoder())
-            })
+            .authenticationProvider(
+                DaoAuthenticationProvider().apply {
+                    setUserDetailsService(userDetailService)
+                    setPasswordEncoder(BCryptPasswordEncoder())
+                }
+            )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()
     }

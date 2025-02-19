@@ -11,8 +11,7 @@ import net.artux.ailingo.server.model.LoginRequest
 import net.artux.ailingo.server.model.LoginResponse
 import net.artux.ailingo.server.model.ResendVerificationCodeRequest
 import net.artux.ailingo.server.model.VerificationRequest
-import java.util.*
-
+import java.util.UUID
 
 interface UserService {
     fun registerUser(registerUser: RegisterUserDto)

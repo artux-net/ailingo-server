@@ -1,10 +1,10 @@
 package net.artux.ailingo.server.service.impl
 
 import net.artux.ailingo.server.entity.SavedTopicsEntity
-import net.artux.ailingo.server.repository.SavedTopicsRepository
-import net.artux.ailingo.server.service.SavedTopicService
 import net.artux.ailingo.server.entity.TopicEntity
+import net.artux.ailingo.server.repository.SavedTopicsRepository
 import net.artux.ailingo.server.repository.UserRepository
+import net.artux.ailingo.server.service.SavedTopicService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service

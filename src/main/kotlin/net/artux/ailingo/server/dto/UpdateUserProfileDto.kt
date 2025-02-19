@@ -1,6 +1,5 @@
 package net.artux.ailingo.server.dto
 
-
 import lombok.Builder
 import lombok.Data
 

@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.core.util
+package net.artux.ailingo.server.dto
 
 data class ErrorResponse(
     val message: String,

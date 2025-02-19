@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.core.configuration;
+package net.artux.ailingo.server.configuration;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -7,7 +7,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
 import lombok.RequiredArgsConstructor;
-import net.artux.ailingo.server.core.service.ValuesService;
+import net.artux.ailingo.server.service.impl.ValuesService;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.core.util
+package net.artux.ailingo.server.util
 
 import net.artux.ailingo.server.dto.RegisterUserDto
 import net.artux.ailingo.server.repository.UserRepository

@@ -1,5 +1,6 @@
-package net.artux.ailingo.server.core.util
+package net.artux.ailingo.server.util
 
+import net.artux.ailingo.server.dto.ErrorResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
@@ -86,7 +87,7 @@ class GlobalExceptionHandler {
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
         val errorResponse = ErrorResponse(
-            message = UNKNOWN_ERROR_MESSAGE + " " +  ex.localizedMessage,
+            message = UNKNOWN_ERROR_MESSAGE + " " + ex.localizedMessage,
             status = HttpStatus.INTERNAL_SERVER_ERROR.value()
         )
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
