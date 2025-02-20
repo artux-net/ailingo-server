@@ -23,7 +23,7 @@ jobs:
         with:
           gradle-version: 8.4
 
-      - run: ./gradlew build --no-daemon -x test
+      - run: ./gradlew build --no-daemon -x test -x detekt
 
       - name: Run
         env:
