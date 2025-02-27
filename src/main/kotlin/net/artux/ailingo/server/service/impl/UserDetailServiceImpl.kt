@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Component
 import java.time.Instant
-import java.util.Optional
+import java.util.*
 
 @Component
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ class UserDetailServiceImpl(
 
         val userOptional: Optional<UserEntity> =
             if (username.contains("@")) {
-                userRepository.getByEmail(username)
+                userRepository.findByEmail(username)
             } else {
                 userRepository.getByLogin(username)
             }
