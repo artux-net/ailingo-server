@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Component
 import java.time.Instant
-import java.util.*
+import java.util.Optional
 
 @Component
 @RequiredArgsConstructor
