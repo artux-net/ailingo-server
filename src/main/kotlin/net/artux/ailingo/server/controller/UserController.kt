@@ -45,7 +45,7 @@ class UserController(
     }
 
     @Operation(summary = "Обновление JWT токена")
-    @PostMapping("/refresh-token")
+    @PostMapping("/refreshToken")
     fun refreshToken(@RequestBody request: RefreshTokenRequest): ResponseEntity<RefreshTokenResponse> {
         val response = userService.refreshToken(request)
         return ResponseEntity.ok(response)
@@ -73,14 +73,14 @@ class UserController(
     }
 
     @Operation(summary = "Верификация email пользователя")
-    @PostMapping("/verify-email")
+    @PostMapping("/verifyEmail")
     fun verifyEmail(@RequestBody verificationRequest: VerificationRequest): ResponseEntity<LoginResponse> {
         val user = userService.verifyEmail(verificationRequest)
         return ResponseEntity.ok(user)
     }
 
     @Operation(summary = "Переотправка кода верификации email")
-    @PostMapping("/resend-verification-code")
+    @PostMapping("/resendVerificationCode")
     fun resendVerificationCode(
         @RequestBody resendVerificationCodeRequest: ResendVerificationCodeRequest
     ): ResponseEntity<String> {
