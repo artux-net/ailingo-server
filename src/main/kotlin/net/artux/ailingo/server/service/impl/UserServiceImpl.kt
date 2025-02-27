@@ -127,7 +127,11 @@ class UserServiceImpl(
             logger.error("Ошибка при аутентификации пользователя {}: {}", request.login, e.message, e)
             throw InvalidRequestException("Ошибка при входе в систему. Попробуйте позже.")
         }
-        val user = userRepository.findByLogin(request.login).orElseThrow()
+        val user = if (request.login.contains("@")) {
+            userRepository.findByEmail(request.login)
+        } else {
+            userRepository.findByLogin(request.login)
+        }.orElseThrow()
         val accessToken = jwtUtil.generateToken(user)
         val refreshToken = jwtUtil.generateRefreshToken(user)
         user.lastLoginAt = Instant.now()

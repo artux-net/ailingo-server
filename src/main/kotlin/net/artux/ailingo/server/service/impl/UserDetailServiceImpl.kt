@@ -25,7 +25,7 @@ class UserDetailServiceImpl(
 
         val userOptional: Optional<UserEntity> =
             if (username.contains("@")) {
-                userRepository.getByEmail(username)
+                userRepository.findByEmail(username)
             } else {
                 userRepository.getByLogin(username)
             }
