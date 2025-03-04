@@ -40,7 +40,7 @@ class UserDetailServiceImpl(
             val userDetails = User.builder()
                 .username(simpleUser.login)
                 .password(simpleUser.password)
-                .authorities(simpleUser.authorities)
+                .authorities("ROLE_" + simpleUser.role.name)
                 .build()
             return SecurityUser(simpleUser.id, userDetails)
         } else {

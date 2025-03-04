@@ -248,10 +248,10 @@ class UserServiceImpl(
             updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
         ) {
             if (updateUserProfile.oldPassword.isNullOrBlank() && (
-                        updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
-                                updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
-                                updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
-                        )
+                    updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
+                        updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
+                        updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
+                    )
             ) {
                 throw InvalidRequestException("Для изменения данных профиля необходимо указать текущий пароль.")
             }
