@@ -8,6 +8,7 @@ import net.artux.ailingo.server.dto.UpdateTopicDTO
 import net.artux.ailingo.server.service.TopicService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -32,6 +33,7 @@ class TopicController(
     }
 
     @Operation(summary = "Добавление нового топика")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/addTopic")
     fun addTopic(@RequestBody createTopicDTO: CreateTopicDTO): ResponseEntity<String> {
         topicService.addTopic(createTopicDTO)
@@ -39,6 +41,7 @@ class TopicController(
     }
 
     @Operation(summary = "Добавление новых топиков")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/addTopics")
     fun addTopics(@RequestBody createTopicDTOs: List<CreateTopicDTO>): ResponseEntity<String> {
         topicService.addTopics(createTopicDTOs)
@@ -46,6 +49,7 @@ class TopicController(
     }
 
     @Operation(summary = "Обновление топика")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/updateTopic/{id}")
     fun updateTopic(@PathVariable id: Long, @RequestBody updateTopicDTO: UpdateTopicDTO): ResponseEntity<String> {
         topicService.updateTopic(id, updateTopicDTO)
@@ -53,6 +57,7 @@ class TopicController(
     }
 
     @Operation(summary = "Удаление топика по названию")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/deleteTopic")
     fun deleteTopicByName(@RequestParam name: String): ResponseEntity<String> {
         topicService.deleteTopicByName(name)
@@ -60,6 +65,7 @@ class TopicController(
     }
 
     @Operation(summary = "Удаление топика по ID")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/deleteTopic/{id}")
     fun deleteTopic(@PathVariable id: Long): ResponseEntity<String> {
         topicService.deleteTopicById(id)
