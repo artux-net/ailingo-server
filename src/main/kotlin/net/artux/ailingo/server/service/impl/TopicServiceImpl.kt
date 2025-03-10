@@ -9,37 +9,40 @@ import net.artux.ailingo.server.service.TopicService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
-@Transactional
 class TopicServiceImpl(
-    private val topicRepository: TopicRepository
+    val topicRepository: TopicRepository
 ) : TopicService {
-
-    override fun getTopics(locale: String): List<TopicResponseDTO> {
-        return topicRepository.findAll().map { topic ->
+    override fun getTopics(): List<TopicResponseDTO> {
+        return topicRepository.findAll().map {
             TopicResponseDTO(
-                id = topic.id,
-                name = topic.name,
-                imageUrl = topic.image,
-                price = topic.price,
+                id = it.id,
+                name = it.name,
+                imageUrl = it.image,
+                price = it.price,
+                welcomePrompt = it.welcomePrompt,
+                systemPrompt = it.systemPrompt,
+                messageLimit = it.messageLimit
             )
         }
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     override fun addTopic(createTopicDto: CreateTopicDTO): TopicEntity {
         val topic = TopicEntity().apply {
             name = createTopicDto.name
             image = createTopicDto.image
             price = createTopicDto.price
             level = createTopicDto.level
+            welcomePrompt = createTopicDto.welcomePrompt
+            systemPrompt = createTopicDto.systemPrompt
+            messageLimit = createTopicDto.messageLimit
         }
         return topicRepository.save(topic)
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     override fun addTopics(createTopicDTOs: List<CreateTopicDTO>): List<TopicEntity> {
         val topics = createTopicDTOs.map { dto ->
             TopicEntity().apply {
@@ -47,28 +50,34 @@ class TopicServiceImpl(
                 image = dto.image
                 price = dto.price
                 level = dto.level
+                welcomePrompt = dto.welcomePrompt
+                systemPrompt = dto.systemPrompt
+                messageLimit = dto.messageLimit
             }
         }
         return topicRepository.saveAll(topics)
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     override fun updateTopic(id: Long, updateTopicDto: UpdateTopicDTO): TopicEntity {
         val topic = topicRepository.findByIdOrNull(id) ?: throw IllegalArgumentException("Топик с id $id не найден")
 
         updateTopicDto.name?.let { topic.name = it }
-        updateTopicDto.imageUrl?.let { topic.image = it }
+        updateTopicDto.image?.let { topic.image = it }
         updateTopicDto.price?.let { topic.price = it }
+        updateTopicDto.welcomePrompt?.let { topic.welcomePrompt = it }
+        updateTopicDto.systemPrompt?.let { topic.systemPrompt = it }
+        updateTopicDto.messageLimit?.let { topic.messageLimit = it }
 
         return topicRepository.save(topic)
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     override fun deleteTopicByName(name: String) {
         topicRepository.deleteTopicByName(name)
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     override fun deleteTopicById(id: Long) {
         if (!topicRepository.existsById(id)) {
             throw IllegalArgumentException("Топик с id $id не найден")

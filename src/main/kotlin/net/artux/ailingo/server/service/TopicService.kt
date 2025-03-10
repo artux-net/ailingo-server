@@ -1,22 +1,20 @@
-package net.artux.ailingo.server.service;
+package net.artux.ailingo.server.service
 
-import net.artux.ailingo.server.dto.CreateTopicDTO;
-import net.artux.ailingo.server.dto.TopicResponseDTO;
-import net.artux.ailingo.server.dto.UpdateTopicDTO;
-import net.artux.ailingo.server.entity.TopicEntity;
+import net.artux.ailingo.server.dto.CreateTopicDTO
+import net.artux.ailingo.server.dto.TopicResponseDTO
+import net.artux.ailingo.server.dto.UpdateTopicDTO
+import net.artux.ailingo.server.entity.TopicEntity
 
-import java.util.List;
+interface TopicService {
+    fun getTopics(): List<TopicResponseDTO>
 
-public interface TopicService {
-    List<TopicResponseDTO> getTopics(String locale);
+    fun addTopic(createTopicDto: CreateTopicDTO): TopicEntity
 
-    TopicEntity addTopic(CreateTopicDTO createTopicDto);
+    fun addTopics(createTopicDTOs: List<CreateTopicDTO>): List<TopicEntity>
 
-    List<TopicEntity> addTopics(List<CreateTopicDTO> createTopicDTO);
+    fun updateTopic(id: Long, updateTopicDto: UpdateTopicDTO): TopicEntity
 
-    TopicEntity updateTopic(Long id, UpdateTopicDTO updateTopicDto);
+    fun deleteTopicByName(name: String)
 
-    void deleteTopicByName(String name);
-
-    void deleteTopicById(Long id);
+    fun deleteTopicById(id: Long)
 }

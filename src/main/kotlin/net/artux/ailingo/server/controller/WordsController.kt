@@ -1,5 +1,6 @@
 package net.artux.ailingo.server.controller
 
+import io.swagger.v3.oas.annotations.tags.Tag
 import net.artux.ailingo.server.service.WordsService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@Tag(name = "Избранные слова")
 @RequestMapping("/api/v1/words")
 class WordsController(private val wordsService: WordsService) {
 
