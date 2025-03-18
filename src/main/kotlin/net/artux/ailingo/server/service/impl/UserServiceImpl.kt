@@ -57,18 +57,31 @@ class UserServiceImpl(
     fun initAdminUser() {
         if (userRepository.count() == 0L) {
             val registerUserDto = RegisterUserDto("admin", "password", "test@test.net", "admin")
-            val userEntity = UserEntity(
+            val adminEntity = UserEntity(
                 null,
                 registerUserDto.login,
                 registerUserDto.email,
                 passwordEncoder.encode(registerUserDto.password),
                 registerUserDto.name,
-                null
+                null,
             )
-            userEntity.role = Role.ADMIN
-            userEntity.isEmailVerified = true
-            userRepository.save(userEntity)
+            adminEntity.role = Role.ADMIN
+            adminEntity.isEmailVerified = true
+            userRepository.save(adminEntity)
             logger.info("Default admin user created successfully.")
+
+            val simpleUser = RegisterUserDto("user", "password", "user@user.net", "userName")
+            val simpleUserEntity = UserEntity(
+                null,
+                simpleUser.login,
+                simpleUser.email,
+                passwordEncoder.encode(simpleUser.password),
+                simpleUser.name,
+                null,
+            )
+            simpleUserEntity.isEmailVerified = true
+            userRepository.save(simpleUserEntity)
+            logger.info("Default user created successfully.")
         } else {
             logger.info("Users already exist, skipping default admin user creation.")
         }
