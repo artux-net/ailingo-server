@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       - POSTGRES_USER=ailingo
-      - POSTGRES_PASSWORD=&1Te3O6zHnD9
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "11002:5432"
     labels:
@@ -41,7 +41,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ailingo
       - SPRING_DATASOURCE_USERNAME=ailingo
-      - SPRING_DATASOURCE_PASSWORD=&1Te3O6zHnD9
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
