@@ -19,6 +19,7 @@ import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.stereotype.Service
+import java.time.Instant
 import java.util.UUID
 
 @Service
@@ -38,6 +39,8 @@ class ChatServiceImpl(
             this.content = createMessage(topic, emptyList(), null)?.text
             this.type = MessageType.SYSTEM
             this.owner = userService.getCurrentUser()
+            this.user = userService.getCurrentUser()
+            this.timestamp = Instant.now()
         }
 
         return mapHistoryMessageEntityToConversationMessageDto(historyRepository.save(historyMessage))
@@ -55,7 +58,9 @@ class ChatServiceImpl(
                 this.conversationId = chatId
                 this.content = userInput
                 this.owner = user
+                this.user = user
                 this.type = MessageType.USER
+                this.timestamp = Instant.now()
             }
         )
 
@@ -68,6 +73,8 @@ class ChatServiceImpl(
                     this.content = message?.text
                     this.owner = user
                     this.type = MessageType.ASSISTANT
+                    this.user = user
+                    this.timestamp = Instant.now()
                 }
             )
         } else {
