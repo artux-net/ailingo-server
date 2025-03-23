@@ -30,6 +30,8 @@ services:
       - redis
     container_name: ailingo
     restart: unless-stopped
+    labels:
+      io.portainer.accesscontrol.teams: dev
     profiles:
       - prod
     environment:
