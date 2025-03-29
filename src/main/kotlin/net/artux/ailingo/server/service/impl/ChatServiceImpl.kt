@@ -52,6 +52,16 @@ class ChatServiceImpl(
         val topic = messages.firstOrNull()?.topic ?: throw IllegalStateException("Can not find topic for conversation")
         val promptMessages = messages.map { mapHistoryMessageToMessage(it) }
 
+        if (messages.isNotEmpty() && messages.last().type == MessageType.FINAL) {
+            return ConversationMessageDto(
+                "",
+                chatId.toString(),
+                "Dialogue ended. Message limit reached.",
+                Instant.now(),
+                MessageType.FINAL
+            )
+        }
+
         historyRepository.save(
             HistoryMessageEntity().apply {
                 this.topic = topic
@@ -87,6 +97,8 @@ class ChatServiceImpl(
                     this.content = message?.text
                     this.owner = user
                     this.type = MessageType.FINAL
+                    this.user = user
+                    this.timestamp = Instant.now()
                 }
             )
         }
