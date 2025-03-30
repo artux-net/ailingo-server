@@ -51,7 +51,7 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
 
     // ChatGPT
-    implementation(platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT"))
+    implementation(platform("org.springframework.ai:spring-ai-bom:1.0.0-M6"))
     implementation("org.springframework.ai:spring-ai-spring-boot-autoconfigure")
     implementation("org.springframework.ai:spring-ai-openai")
 
