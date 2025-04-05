@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.nikonov
+      comment: "create streak index"
+      id: 20250326-1
+      changes:
+        - sqlFile:
+            path: create_streak_index.sql
+            relativeToChangelogFile: true
