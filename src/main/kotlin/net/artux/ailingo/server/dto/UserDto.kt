@@ -16,5 +16,6 @@ data class UserDto(
     val registration: Instant?,
     val lastLoginAt: Instant? = null,
     val isEmailVerified: Boolean = false,
-    val role: Role
+    val role: Role,
+    val streakValidUntil: Instant? = null
 )
