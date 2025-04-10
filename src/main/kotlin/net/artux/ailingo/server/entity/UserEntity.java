@@ -43,6 +43,7 @@ public class UserEntity extends BaseEntity implements UserDetails {
 
     private Integer xp = 0;
     private Integer streak = 0;
+    private Instant streakValidUntil;
     private Integer coins = 0;
 
     @Column(columnDefinition = "boolean default true")

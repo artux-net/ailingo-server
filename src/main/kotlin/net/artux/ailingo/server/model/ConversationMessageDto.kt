@@ -6,7 +6,7 @@ import java.time.Instant
 data class ConversationMessageDto(
     val id: String,
     val conversationId: String,
-    val content: String,
+    val content: String?,
     val timestamp: Instant,
     val type: MessageType
 )

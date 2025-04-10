@@ -26,7 +26,7 @@ class EmailServiceImpl(
     
                 $verificationCode
     
-                Если возникли проблемы с регистрацией, напишите на почту goida@gmail.com
+                Если возникли проблемы с регистрацией, напишите на почту vangelnum@gmail.com
                         
         """.trimIndent()
         message.from = mailUsername

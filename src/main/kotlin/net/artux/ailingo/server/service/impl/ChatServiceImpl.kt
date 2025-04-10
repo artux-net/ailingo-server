@@ -11,6 +11,8 @@ import net.artux.ailingo.server.repository.MessageHistoryRepository
 import net.artux.ailingo.server.repository.TopicRepository
 import net.artux.ailingo.server.service.ChatService
 import net.artux.ailingo.server.service.UserService
+import net.artux.ailingo.server.util.InvalidRequestException
+import org.slf4j.LoggerFactory
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.messages.AssistantMessage
 import org.springframework.ai.chat.messages.Message
@@ -31,35 +33,67 @@ class ChatServiceImpl(
     private val userService: UserService
 ) : ChatService {
 
+    private val logger = LoggerFactory.getLogger(ChatServiceImpl::class.java)
+
     override fun startConversation(topicName: String): ConversationMessageDto {
-        val topic = topicRepository.findByName(topicName).orElseThrow()
+        val topic = topicRepository.findByName(topicName)
+            .orElseThrow { InvalidRequestException("Topic $topicName not found") }
+
+        val user = userService.getCurrentUser()
+
+        if (topic.price > 0) {
+            logger.info("Topic '${topic.name}' costs ${topic.price} coins. Checking balance for user ${user.login}.")
+            if (user.coins < topic.price) {
+                logger.warn("User ${user.login} has insufficient coins (${user.coins}) to start topic '${topic.name}' (cost: ${topic.price}).")
+                throw InvalidRequestException("Not enough coins. Topic price: ${topic.price}, but you have: ${user.coins}.")
+            }
+
+            val coinResponse = userService.changeCoinsForCurrentUser(-topic.price)
+            if (!coinResponse.success) {
+                logger.error("Failed to deduct ${topic.price} coins from user ${user.login} for topic '${topic.name}'. Reason: ${coinResponse.message}")
+                throw RuntimeException("Error reduce coins")
+            }
+            logger.info("Successfully deducted ${topic.price} coins from user ${user.login} for starting topic '${topic.name}'. New balance: ${coinResponse.newBalance}")
+        } else {
+            logger.info("Topic '${topic.name}' is free. No coins deducted for user ${user.login}.")
+        }
+
+        val conversationId = UUID.randomUUID()
+        val initialMessageContent = createMessage(topic, emptyList(), null)?.text
+        if (initialMessageContent == null) {
+            logger.error("Failed to generate initial welcome message for topic '{}'", topic.name)
+            throw RuntimeException("Failed generate Welcome Prompt.")
+        }
+
         val historyMessage = HistoryMessageEntity().apply {
             this.topic = topic
-            this.conversationId = UUID.randomUUID()
-            this.content = createMessage(topic, emptyList(), null)?.text
+            this.conversationId = conversationId
+            this.content = initialMessageContent
             this.type = MessageType.SYSTEM
-            this.owner = userService.getCurrentUser()
-            this.user = userService.getCurrentUser()
+            this.owner = user
+            this.user = user
             this.timestamp = Instant.now()
         }
 
-        return mapHistoryMessageEntityToConversationMessageDto(historyRepository.save(historyMessage))
+        val savedMessage = historyRepository.save(historyMessage)
+        logger.info("Started conversation ${savedMessage.conversationId} for user ${user.login} on topic '${topic.name}'.")
+        return mapHistoryMessageEntityToConversationMessageDto(savedMessage)
     }
 
     override fun continueDialog(chatId: UUID, userInput: String): ConversationMessageDto {
         val user = userService.getCurrentUser()
         val messages = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
-        val topic = messages.firstOrNull()?.topic ?: throw IllegalStateException("Can not find topic for conversation")
-        val promptMessages = messages.map { mapHistoryMessageToMessage(it) }
 
-        if (messages.isNotEmpty() && messages.last().type == MessageType.FINAL) {
-            return ConversationMessageDto(
-                "",
-                chatId.toString(),
-                "Dialogue ended. Message limit reached.",
-                Instant.now(),
-                MessageType.FINAL
-            )
+        if (messages.isEmpty()) {
+            logger.warn("Attempted to continue non-existent or unauthorized conversation {} for user {}", chatId, user.login)
+            throw InvalidRequestException("Conversation not found or access denied.")
+        }
+
+        val topic = messages.first().topic
+
+        if (messages.last().type == MessageType.FINAL) {
+            logger.info("Attempted to continue already finished conversation {} for user {}", chatId, user.login)
+            return mapHistoryMessageEntityToConversationMessageDto(messages.last())
         }
 
         historyRepository.save(
@@ -74,13 +108,17 @@ class ChatServiceImpl(
             }
         )
 
-        val message = if (messages.size < topic.messageLimit) {
-            val message = createMessage(topic, promptMessages, userInput)
+        val updatedMessages = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
+        val promptMessages = updatedMessages.map { mapHistoryMessageToMessage(it) }
+
+
+        val savedAiMessage: HistoryMessageEntity = if (updatedMessages.size < topic.messageLimit) {
+            val aiResponse = createMessage(topic, promptMessages, userInput)
             historyRepository.save(
                 HistoryMessageEntity().apply {
                     this.topic = topic
                     this.conversationId = chatId
-                    this.content = message?.text
+                    this.content = aiResponse?.text
                     this.owner = user
                     this.type = MessageType.ASSISTANT
                     this.user = user
@@ -88,29 +126,43 @@ class ChatServiceImpl(
                 }
             )
         } else {
+            logger.info("Conversation {} for user {} reached message limit ({}) for topic '{}'. Ending conversation.", chatId, user.login, topic.messageLimit, topic.name)
             val systemMessageToStop = SystemMessage(STOP_CONVERSATION_PROMPT)
-            val message = createMessage(topic, promptMessages + systemMessageToStop, userInput)
-            historyRepository.save(
+            val finalAiResponse = createMessage(topic, promptMessages + systemMessageToStop, userInput)
+
+            val finalHistoryMessage = historyRepository.save(
                 HistoryMessageEntity().apply {
                     this.topic = topic
                     this.conversationId = chatId
-                    this.content = message?.text
+                    this.content = finalAiResponse?.text
                     this.owner = user
                     this.type = MessageType.FINAL
                     this.user = user
                     this.timestamp = Instant.now()
                 }
             )
+
+            try {
+                userService.changeUserStreak()
+                logger.info("Updated streak for user {} after ending conversation {}", user.login, chatId)
+            } catch (e: Exception) {
+                logger.error("Failed to update streak for user {} after ending conversation {}: {}", user.login, chatId, e.message, e)
+            }
+            finalHistoryMessage
         }
 
-        return mapHistoryMessageEntityToConversationMessageDto(message)
+        return mapHistoryMessageEntityToConversationMessageDto(savedAiMessage)
     }
 
+
     override fun getMessages(chatId: UUID): List<ConversationMessageDto> {
-        return historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, userService.getCurrentUser())
-            .map {
-                mapHistoryMessageEntityToConversationMessageDto(it)
-            }
+        val user = userService.getCurrentUser()
+        val messages = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
+        if (messages.isEmpty()) {
+            logger.warn("No messages found or access denied for conversation {} and user {}", chatId, user.login)
+            return emptyList()
+        }
+        return messages.map { mapHistoryMessageEntityToConversationMessageDto(it) }
     }
 
     override fun getConversations(): MutableList<ConversationDto> {
@@ -120,64 +172,88 @@ class ChatServiceImpl(
     private fun createMessage(topic: TopicEntity, messages: List<Message>, userInput: String?): AssistantMessage? {
         val chatClient = baseChatClient.mutate()
             .defaultSystem(topic.systemPrompt)
-            .defaultOptions(getOptions(topic))
+            .defaultOptions(getOptions())
             .build()
 
-        val prompt = if (userInput != null) {
+        val promptToSend = if (userInput != null) {
             Prompt(messages + listOf(UserMessage(userInput)))
         } else {
             Prompt(listOf(SystemMessage(topic.welcomePrompt)))
         }
 
-        return chatClient.prompt(prompt)
-            .call()
-            .chatResponse()
-            ?.result
-            ?.output
-    }
-
-    private fun mapHistoryMessageToMessage(historyMessage: HistoryMessageEntity): Message {
-        return when (historyMessage.type) {
-            MessageType.SYSTEM -> SystemMessage(historyMessage.content)
-            MessageType.USER -> UserMessage(historyMessage.content)
-            MessageType.ASSISTANT -> AssistantMessage(historyMessage.content)
-            MessageType.FINAL -> SystemMessage(historyMessage.content)
-            else -> throw IllegalArgumentException("Unknown message type")
+        return try {
+            chatClient.prompt(promptToSend)
+                .call()
+                .chatResponse()
+                ?.result
+                ?.output
+        } catch (e: Exception) {
+            logger.error("Error calling AI model for topic '{}': {}", topic.name, e.message, e)
+            null
         }
     }
 
+
+    private fun mapHistoryMessageToMessage(historyMessage: HistoryMessageEntity): Message {
+        return when (historyMessage.type) {
+            MessageType.SYSTEM -> SystemMessage(historyMessage.content ?: "")
+            MessageType.USER -> UserMessage(historyMessage.content ?: "")
+            MessageType.ASSISTANT -> AssistantMessage(historyMessage.content ?: "")
+            MessageType.FINAL -> AssistantMessage(historyMessage.content ?: "")
+            null -> {
+                logger.warn("History message ID {} has null type, defaulting to SystemMessage.", historyMessage.id)
+                SystemMessage(historyMessage.content ?: "")
+            }
+        }
+    }
+
+
     override fun testPrompt(promptRequest: PromptRequest): String {
+        if (promptRequest.systemPrompt.isBlank() || promptRequest.userInput.isNullOrBlank()) {
+            throw InvalidRequestException("System prompt and user input cannot be blank for testing.")
+        }
+
         val builder = baseChatClient.mutate()
             .defaultSystem(promptRequest.systemPrompt)
 
         if (promptRequest.chatOptions != null) {
             builder.defaultOptions(promptRequest.chatOptions)
+        } else {
+            builder.defaultOptions(DefaultChatOptionsBuilder().maxTokens(250).build())
+            logger.debug("No chat options provided for testPrompt, using default maxTokens=250.")
         }
 
         val chatClient = builder.build()
-        val request = chatClient.prompt(
-            Prompt(
-                UserMessage(promptRequest.userInput)
-            )
-        )
+        return try {
+            val response = chatClient.prompt(
+                Prompt(
+                    UserMessage(promptRequest.userInput)
+                )
+            ).call().content()
 
-        return request.call().content() ?: throw Exception("Can not get response from OpenAI")
+            response ?: throw RuntimeException("Received null response from AI model during testPrompt.")
+        } catch (e: Exception) {
+            logger.error("Error during testPrompt execution: {}", e.message, e)
+            throw RuntimeException("Failed to get response from AI model during test.", e)
+        }
     }
 
-    // TODO take from topic
-    private fun getOptions(topic: TopicEntity) = DefaultChatOptionsBuilder().maxTokens(200).build()
+    private fun getOptions() = DefaultChatOptionsBuilder()
+        .maxTokens(200)
+        .temperature(0.7)
+        .build()
 
     companion object {
-        const val STOP_CONVERSATION_PROMPT = "Now you have to stop the conversation and leave, DO NOT TELL ANYONE more"
+        const val STOP_CONVERSATION_PROMPT = "Politely inform the user that the conversation message limit for this topic has been reached and you must now conclude the discussion. Wish them well."
     }
 
     protected fun mapHistoryMessageEntityToConversationMessageDto(historyMessageEntity: HistoryMessageEntity): ConversationMessageDto {
         return ConversationMessageDto(
-            historyMessageEntity.id.toString(),
-            historyMessageEntity.conversationId.toString(),
-            historyMessageEntity.content,
-            historyMessageEntity.timestamp,
-            historyMessageEntity.type
+            historyMessageEntity.id?.toString() ?: "",
+            historyMessageEntity.conversationId?.toString() ?: "",
+            historyMessageEntity.content ?: "",
+            historyMessageEntity.timestamp ?: Instant.now(),
+            historyMessageEntity.type ?: MessageType.SYSTEM
         )
     }
 }
