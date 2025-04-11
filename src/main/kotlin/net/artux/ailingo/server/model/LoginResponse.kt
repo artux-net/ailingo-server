@@ -8,5 +8,5 @@ data class LoginResponse(
     val user: UserDto,
     val isStreakContinued: Boolean,
     val currentStreak: Int,
-    val streakValidUntil: String?
+    val lastStreakAt: String?
 )

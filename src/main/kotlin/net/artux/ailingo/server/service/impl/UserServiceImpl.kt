@@ -147,7 +147,7 @@ class UserServiceImpl(
             userRepository.findByLogin(request.login)
         }.orElseThrow()
 
-        val streakCheckResult = checkAndUpdateStreakOnLogin(user)
+        val streakCheckResult = checkAndResetStreakIfNeeded(user)
         user.lastLoginAt = Instant.now()
         userRepository.save(user)
 
@@ -158,9 +158,9 @@ class UserServiceImpl(
             token = accessToken,
             refreshToken = refreshToken,
             user = getDto(user),
-            isStreakContinued = streakCheckResult.isStreakContinued,
+            isStreakContinued = streakCheckResult.streakWasValid,
             currentStreak = user.streak,
-            streakValidUntil = streakCheckResult.streakValidUntil?.toString()
+            lastStreakAt = user.lastStreakAt?.toString()
         )
     }
 
@@ -198,44 +198,52 @@ class UserServiceImpl(
                 userEntity.lastLoginAt,
                 userEntity.isEmailVerified,
                 userEntity.role,
-                userEntity.streakValidUntil
+                userEntity.lastStreakAt
             )
         }
     }
 
     override fun changeUserStreak() {
         val currentUser = getCurrentUser()
-        val today = Instant.now().truncatedTo(ChronoUnit.DAYS)
-        // Получаем день последней активности
-        val lastActivityDay = currentUser.lastSession?.truncatedTo(ChronoUnit.DAYS)
-
-        // Если активность уже была засчитана сегодня, ничего не делаем
-        if (lastActivityDay == today) {
-            logger.info("User ${currentUser.login} already had a streak activity today. Streak remains ${currentUser.streak}.")
-            return // Выходим, так как уже засчитано
-        }
-
-        // Если не было активности сегодня, обновляем стрик
+        val now = Instant.now()
+        val today = now.truncatedTo(ChronoUnit.DAYS)
         val yesterday = today.minus(1, ChronoUnit.DAYS)
 
-        if (lastActivityDay == yesterday) {
-            // Продолжаем стрик
-            currentUser.streak += 1
-            logger.info("User ${currentUser.login} continued streak. New streak: ${currentUser.streak}.")
-        } else {
-            // Начинаем новый стрик (или первая активность)
-            currentUser.streak = 1
-            logger.info("User ${currentUser.login} started a new streak (or first activity). Streak set to 1.")
+        val lastStreakDay = currentUser.lastStreakAt?.truncatedTo(ChronoUnit.DAYS)
+
+        if (lastStreakDay == today) {
+            logger.info("User ${currentUser.login} already had a streak activity today (${currentUser.lastStreakAt}). Streak remains ${currentUser.streak}.")
+            currentUser.lastSession = now
+            userRepository.save(currentUser)
+            return
         }
 
-        // Обновляем время последней активности и срок действия стрика
-        currentUser.lastSession = Instant.now()
-        // Стрик действителен до конца *следующего* дня
-        currentUser.streakValidUntil = today.plus(1, ChronoUnit.DAYS).plusSeconds(86399) // 23:59:59 следующего дня
+        var streakUpdated = false
+        if (lastStreakDay == yesterday) {
+            currentUser.streak += 1
+            logger.info("User ${currentUser.login} continued streak from yesterday (${currentUser.lastStreakAt}). New streak: ${currentUser.streak}.")
+            streakUpdated = true
+        }
 
-        userRepository.save(currentUser)
-        logger.info("User ${currentUser.login} lastSession updated to ${currentUser.lastSession}, streakValidUntil set to ${currentUser.streakValidUntil}")
-
+        else if (lastStreakDay == null || lastStreakDay.isBefore(yesterday)) {
+            if (lastStreakDay != null) {
+                logger.info("User ${currentUser.login} streak reset. Last streak activity was on $lastStreakDay, which is before yesterday ($yesterday). Starting new streak.")
+            } else {
+                logger.info("User ${currentUser.login} starting first streak.")
+            }
+            currentUser.streak = 1
+            streakUpdated = true
+        }
+        if (streakUpdated) {
+            currentUser.lastStreakAt = now
+            currentUser.lastSession = now
+            userRepository.save(currentUser)
+            logger.info("User ${currentUser.login} streak updated. LastStreakAt: ${currentUser.lastStreakAt}, LastSession: ${currentUser.lastSession}")
+        } else {
+            logger.warn("User ${currentUser.login}: changeUserStreak called, but no condition met to update streak. lastStreakAt=${currentUser.lastStreakAt}, today=$today")
+            currentUser.lastSession = now
+            userRepository.save(currentUser)
+        }
     }
 
     override fun changeCoinsForCurrentUser(amount: Int): ChangeCoinsResponse {
@@ -365,8 +373,6 @@ class UserServiceImpl(
 
         pendingUserRepository.delete(pendingUser)
 
-        val streakCheckResult = checkAndUpdateStreakOnLogin(userEntity)
-        userEntity.streakValidUntil = streakCheckResult.streakValidUntil
         userRepository.save(userEntity)
 
         val accessToken = jwtUtil.generateToken(userEntity)
@@ -375,9 +381,9 @@ class UserServiceImpl(
             token = accessToken,
             refreshToken = refreshToken,
             user = getDto(userEntity),
-            isStreakContinued = streakCheckResult.isStreakContinued,
+            isStreakContinued = false,
             currentStreak = userEntity.streak,
-            streakValidUntil = streakCheckResult.streakValidUntil?.toString()
+            lastStreakAt = userEntity.lastStreakAt?.toString()
         )
     }
 
@@ -423,7 +429,8 @@ class UserServiceImpl(
         userEntity.registration,
         userEntity.lastLoginAt,
         userEntity.isEmailVerified,
-        userEntity.role
+        userEntity.role,
+        userEntity.lastStreakAt
     )
 
     private fun generateVerificationCode(): String {
@@ -431,29 +438,35 @@ class UserServiceImpl(
         return String.format("%06d", random.nextInt(1000000))
     }
 
-    private fun checkAndUpdateStreakOnLogin(user: UserEntity): StreakCheckResult {
+    private fun checkAndResetStreakIfNeeded(user: UserEntity): StreakCheckResult {
         val now = Instant.now()
+        val today = now.truncatedTo(ChronoUnit.DAYS)
+        val yesterday = today.minus(1, ChronoUnit.DAYS)
+
+        val lastStreakDay = user.lastStreakAt?.truncatedTo(ChronoUnit.DAYS)
+
         var needsSave = false
+        var streakWasValid: Boolean
 
-        // Проверяем, действителен ли текущий стрик
-        if (user.streak > 0 && (user.streakValidUntil == null || user.streakValidUntil!!.isBefore(now))) {
-            // Стрик истек
-            logger.info("Streak for user ${user.login} expired (was ${user.streak}, valid until ${user.streakValidUntil}). Resetting to 0.")
-            user.streak = 0
-            user.streakValidUntil = null
-            needsSave = true
+        if (user.streak > 0 && user.lastStreakAt != null) {
+            if (lastStreakDay == today || lastStreakDay == yesterday) {
+                streakWasValid = true
+            } else {
+                logger.info("Streak for user ${user.login} expired. Last activity was on $lastStreakDay (${user.lastStreakAt}). Resetting streak from ${user.streak} to 0.")
+                user.streak = 0
+                user.lastStreakAt = null
+                needsSave = true
+                streakWasValid = false
+            }
+        } else {
+            if (user.streak > 0 && user.lastStreakAt == null) {
+                logger.warn("User ${user.login} has streak ${user.streak} but null lastStreakAt. Resetting streak to 0.")
+                user.streak = 0
+                needsSave = true
+            }
+            streakWasValid = false
         }
 
-        if (needsSave) {
-            userRepository.save(user)
-        }
-
-        val isStreakCurrentlyActive =
-            user.streak > 0 && user.streakValidUntil != null && !user.streakValidUntil!!.isBefore(now)
-
-        return StreakCheckResult(
-            isStreakContinued = isStreakCurrentlyActive,
-            streakValidUntil = user.streakValidUntil
-        )
+        return StreakCheckResult(streakWasValid = streakWasValid, needsSave = needsSave)
     }
 }

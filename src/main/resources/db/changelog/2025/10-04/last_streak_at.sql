@@ -1,0 +1,2 @@
+ALTER TABLE app_user
+ADD COLUMN last_streak_at TIMESTAMP NULL DEFAULT NULL;

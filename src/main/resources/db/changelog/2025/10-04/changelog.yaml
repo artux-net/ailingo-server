@@ -1,9 +1,9 @@
 databaseChangeLog:
   - changeSet:
       author: i.letuchiy
-      comment: "streakValidTime"
+      comment: "last_streak_at"
       id: 20251004-1
       changes:
         - sqlFile:
-            path: streak_valid_time.sql
+            path: last_streak_at.sql
             relativeToChangelogFile: true
