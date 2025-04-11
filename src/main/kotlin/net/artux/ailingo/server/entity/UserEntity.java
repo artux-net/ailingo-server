@@ -43,7 +43,7 @@ public class UserEntity extends BaseEntity implements UserDetails {
 
     private Integer xp = 0;
     private Integer streak = 0;
-    private Instant streakValidUntil;
+    private Instant lastStreakAt;
     private Integer coins = 0;
 
     @Column(columnDefinition = "boolean default true")
@@ -77,6 +77,7 @@ public class UserEntity extends BaseEntity implements UserDetails {
         this.receiveEmails = true;
         this.xp = 0;
         this.streak = 0;
+        this.lastStreakAt = null;
         this.coins = 500;
         this.role = Role.USER;
         this.lastLoginAt = registration = Instant.now();
