@@ -158,9 +158,7 @@ class UserServiceImpl(
             token = accessToken,
             refreshToken = refreshToken,
             user = getDto(user),
-            isStreakContinued = streakCheckResult.streakWasValid,
-            currentStreak = user.streak,
-            lastStreakAt = user.lastStreakAt?.toString()
+            isStreakContinued = streakCheckResult.streakWasValid
         )
     }
 
@@ -381,9 +379,7 @@ class UserServiceImpl(
             token = accessToken,
             refreshToken = refreshToken,
             user = getDto(userEntity),
-            isStreakContinued = false,
-            currentStreak = userEntity.streak,
-            lastStreakAt = userEntity.lastStreakAt?.toString()
+            isStreakContinued = false
         )
     }
 
