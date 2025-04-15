@@ -18,10 +18,3 @@ data class UserDto(
     val isEmailVerified: Boolean = false,
     val role: Role
 )
-
-data class LeaderboardDto(
-    val coins: Int = 0,
-    val streak: Int = 0,
-    val avatar: String? = null,
-    val name: String = "",
-)
