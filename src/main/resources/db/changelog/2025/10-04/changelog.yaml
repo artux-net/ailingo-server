@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "streakValidTime"
+      id: 20251004-1
+      changes:
+        - sqlFile:
+            path: streak_valid_time.sql
+            relativeToChangelogFile: true

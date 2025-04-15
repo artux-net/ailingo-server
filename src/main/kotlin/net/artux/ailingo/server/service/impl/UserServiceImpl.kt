@@ -15,6 +15,7 @@ import net.artux.ailingo.server.model.LoginRequest
 import net.artux.ailingo.server.model.LoginResponse
 import net.artux.ailingo.server.model.ResendVerificationCodeRequest
 import net.artux.ailingo.server.model.Role
+import net.artux.ailingo.server.model.StreakCheckResult
 import net.artux.ailingo.server.model.VerificationRequest
 import net.artux.ailingo.server.repository.PendingUserRepository
 import net.artux.ailingo.server.repository.UserRepository
@@ -145,12 +146,22 @@ class UserServiceImpl(
         } else {
             userRepository.findByLogin(request.login)
         }.orElseThrow()
-        val accessToken = jwtUtil.generateToken(user)
-        val refreshToken = jwtUtil.generateRefreshToken(user)
+
+        val streakCheckResult = checkAndUpdateStreakOnLogin(user)
         user.lastLoginAt = Instant.now()
         userRepository.save(user)
 
-        return LoginResponse(accessToken, refreshToken, getDto(user))
+        val accessToken = jwtUtil.generateToken(user)
+        val refreshToken = jwtUtil.generateRefreshToken(user)
+
+        return LoginResponse(
+            token = accessToken,
+            refreshToken = refreshToken,
+            user = getDto(user),
+            isStreakContinued = streakCheckResult.isStreakContinued,
+            currentStreak = user.streak,
+            streakValidUntil = streakCheckResult.streakValidUntil?.toString()
+        )
     }
 
     override fun refreshToken(request: RefreshTokenRequest): RefreshTokenResponse {
@@ -186,26 +197,45 @@ class UserServiceImpl(
                 userEntity.registration,
                 userEntity.lastLoginAt,
                 userEntity.isEmailVerified,
-                userEntity.role
+                userEntity.role,
+                userEntity.streakValidUntil
             )
         }
     }
 
     override fun changeUserStreak() {
-        val yesterday = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
-        val today = Instant.now().truncatedTo(ChronoUnit.DAYS)
         val currentUser = getCurrentUser()
-        val lastStrikeAt = currentUser.lastSession?.truncatedTo(ChronoUnit.DAYS) ?: Instant.EPOCH
+        val today = Instant.now().truncatedTo(ChronoUnit.DAYS)
+        // Получаем день последней активности
+        val lastActivityDay = currentUser.lastSession?.truncatedTo(ChronoUnit.DAYS)
 
-        if (lastStrikeAt.isBefore(yesterday)) {
-            currentUser.streak = 0
-        } else {
-            if (lastStrikeAt != today) {
-                currentUser.streak += 1
-                currentUser.lastSession = today
-            }
+        // Если активность уже была засчитана сегодня, ничего не делаем
+        if (lastActivityDay == today) {
+            logger.info("User ${currentUser.login} already had a streak activity today. Streak remains ${currentUser.streak}.")
+            return // Выходим, так как уже засчитано
         }
+
+        // Если не было активности сегодня, обновляем стрик
+        val yesterday = today.minus(1, ChronoUnit.DAYS)
+
+        if (lastActivityDay == yesterday) {
+            // Продолжаем стрик
+            currentUser.streak += 1
+            logger.info("User ${currentUser.login} continued streak. New streak: ${currentUser.streak}.")
+        } else {
+            // Начинаем новый стрик (или первая активность)
+            currentUser.streak = 1
+            logger.info("User ${currentUser.login} started a new streak (or first activity). Streak set to 1.")
+        }
+
+        // Обновляем время последней активности и срок действия стрика
+        currentUser.lastSession = Instant.now()
+        // Стрик действителен до конца *следующего* дня
+        currentUser.streakValidUntil = today.plus(1, ChronoUnit.DAYS).plusSeconds(86399) // 23:59:59 следующего дня
+
         userRepository.save(currentUser)
+        logger.info("User ${currentUser.login} lastSession updated to ${currentUser.lastSession}, streakValidUntil set to ${currentUser.streakValidUntil}")
+
     }
 
     override fun changeCoinsForCurrentUser(amount: Int): ChangeCoinsResponse {
@@ -265,10 +295,10 @@ class UserServiceImpl(
             updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
         ) {
             if (updateUserProfile.oldPassword.isNullOrBlank() && (
-                    updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
-                        updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
-                        updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
-                    )
+                        updateUserProfile.name != null && updateUserProfile.name != currentUser.name ||
+                                updateUserProfile.email != null && updateUserProfile.email != currentUser.email ||
+                                updateUserProfile.avatar != null && updateUserProfile.avatar != currentUser.avatar
+                        )
             ) {
                 throw InvalidRequestException("Для изменения данных профиля необходимо указать текущий пароль.")
             }
@@ -335,9 +365,20 @@ class UserServiceImpl(
 
         pendingUserRepository.delete(pendingUser)
 
+        val streakCheckResult = checkAndUpdateStreakOnLogin(userEntity)
+        userEntity.streakValidUntil = streakCheckResult.streakValidUntil
+        userRepository.save(userEntity)
+
         val accessToken = jwtUtil.generateToken(userEntity)
         val refreshToken = jwtUtil.generateRefreshToken(userEntity)
-        return LoginResponse(accessToken, refreshToken, getDto(userEntity))
+        return LoginResponse(
+            token = accessToken,
+            refreshToken = refreshToken,
+            user = getDto(userEntity),
+            isStreakContinued = streakCheckResult.isStreakContinued,
+            currentStreak = userEntity.streak,
+            streakValidUntil = streakCheckResult.streakValidUntil?.toString()
+        )
     }
 
     override fun resendVerificationCode(resendVerificationCodeRequest: ResendVerificationCodeRequest) {
@@ -388,5 +429,31 @@ class UserServiceImpl(
     private fun generateVerificationCode(): String {
         val random = SecureRandom()
         return String.format("%06d", random.nextInt(1000000))
+    }
+
+    private fun checkAndUpdateStreakOnLogin(user: UserEntity): StreakCheckResult {
+        val now = Instant.now()
+        var needsSave = false
+
+        // Проверяем, действителен ли текущий стрик
+        if (user.streak > 0 && (user.streakValidUntil == null || user.streakValidUntil!!.isBefore(now))) {
+            // Стрик истек
+            logger.info("Streak for user ${user.login} expired (was ${user.streak}, valid until ${user.streakValidUntil}). Resetting to 0.")
+            user.streak = 0
+            user.streakValidUntil = null
+            needsSave = true
+        }
+
+        if (needsSave) {
+            userRepository.save(user)
+        }
+
+        val isStreakCurrentlyActive =
+            user.streak > 0 && user.streakValidUntil != null && !user.streakValidUntil!!.isBefore(now)
+
+        return StreakCheckResult(
+            isStreakContinued = isStreakCurrentlyActive,
+            streakValidUntil = user.streakValidUntil
+        )
     }
 }
