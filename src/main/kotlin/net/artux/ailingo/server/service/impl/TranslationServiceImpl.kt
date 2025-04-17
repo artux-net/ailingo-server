@@ -3,19 +3,21 @@ package net.artux.ailingo.server.service.impl
 import net.artux.ailingo.server.model.TranslationResponse
 import net.artux.ailingo.server.service.TranslationService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
 
 @Service
 class TranslationServiceImpl(
-    private val restTemplate: RestTemplate
+    private val restTemplate: RestTemplate,
+    @Value("\${translation.api.base-url}") private val baseUrl: String
 ) : TranslationService {
 
     private val logger = LoggerFactory.getLogger(TranslationServiceImpl::class.java)
 
     override fun translate(text: String, langpair: String): String? {
-        val uri = UriComponentsBuilder.fromHttpUrl("https://api.mymemory.translated.net/get")
+        val uri = UriComponentsBuilder.fromHttpUrl(baseUrl + "/get")
             .queryParam("q", text)
             .queryParam("langpair", langpair)
             .build()

@@ -15,8 +15,6 @@ data class Match(
     val target: String?,
     @JsonProperty("quality")
     val quality: String?,
-    @JsonProperty("reference")
-    val reference: Any?,
     @JsonProperty("usage-count")
     val usageCount: Int?,
     @JsonProperty("subject")
