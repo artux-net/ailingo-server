@@ -6,7 +6,5 @@ data class LoginResponse(
     val token: String,
     val refreshToken: String,
     val user: UserDto,
-    val isStreakContinued: Boolean,
-    val currentStreak: Int,
-    val streakValidUntil: String?
+    val isStreakContinued: Boolean
 )
