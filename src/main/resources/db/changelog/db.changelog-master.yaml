@@ -24,5 +24,5 @@ databaseChangeLog:
       file: 2025/26-03/create_streak_index.sql
       relativeToChangelogFile: true
   - include:
-      file: 2025/10-04/streak_valid_time.sql
+      file: 2025/10-04/last_streak_at.sql
       relativeToChangelogFile: true

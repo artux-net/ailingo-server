@@ -11,6 +11,8 @@ import net.artux.ailingo.server.repository.MessageHistoryRepository
 import net.artux.ailingo.server.repository.TopicRepository
 import net.artux.ailingo.server.service.ChatService
 import net.artux.ailingo.server.service.UserService
+import net.artux.ailingo.server.util.AiServiceException
+import net.artux.ailingo.server.util.CoinOperationException
 import net.artux.ailingo.server.util.InvalidRequestException
 import org.slf4j.LoggerFactory
 import org.springframework.ai.chat.client.ChatClient
@@ -51,7 +53,7 @@ class ChatServiceImpl(
             val coinResponse = userService.changeCoinsForCurrentUser(-topic.price)
             if (!coinResponse.success) {
                 logger.error("Failed to deduct ${topic.price} coins from user ${user.login} for topic '${topic.name}'. Reason: ${coinResponse.message}")
-                throw RuntimeException("Error reduce coins")
+                throw CoinOperationException("Failed to deduct coins: ${coinResponse.message}")
             }
             logger.info("Successfully deducted ${topic.price} coins from user ${user.login} for starting topic '${topic.name}'. New balance: ${coinResponse.newBalance}")
         } else {
@@ -62,7 +64,7 @@ class ChatServiceImpl(
         val initialMessageContent = createMessage(topic, emptyList(), null)?.text
         if (initialMessageContent == null) {
             logger.error("Failed to generate initial welcome message for topic '{}'", topic.name)
-            throw RuntimeException("Failed generate Welcome Prompt.")
+            throw AiServiceException("Failed to generate Welcome Prompt.")
         }
 
         val historyMessage = HistoryMessageEntity().apply {
@@ -209,33 +211,21 @@ class ChatServiceImpl(
 
 
     override fun testPrompt(promptRequest: PromptRequest): String {
-        if (promptRequest.systemPrompt.isBlank() || promptRequest.userInput.isNullOrBlank()) {
-            throw InvalidRequestException("System prompt and user input cannot be blank for testing.")
-        }
-
         val builder = baseChatClient.mutate()
             .defaultSystem(promptRequest.systemPrompt)
 
         if (promptRequest.chatOptions != null) {
             builder.defaultOptions(promptRequest.chatOptions)
-        } else {
-            builder.defaultOptions(DefaultChatOptionsBuilder().maxTokens(250).build())
-            logger.debug("No chat options provided for testPrompt, using default maxTokens=250.")
         }
 
         val chatClient = builder.build()
-        return try {
-            val response = chatClient.prompt(
-                Prompt(
-                    UserMessage(promptRequest.userInput)
-                )
-            ).call().content()
+        val request = chatClient.prompt(
+            Prompt(
+                UserMessage(promptRequest.userInput)
+            )
+        )
 
-            response ?: throw RuntimeException("Received null response from AI model during testPrompt.")
-        } catch (e: Exception) {
-            logger.error("Error during testPrompt execution: {}", e.message, e)
-            throw RuntimeException("Failed to get response from AI model during test.", e)
-        }
+        return request.call().content() ?: throw Exception("Can not get response from OpenAI")
     }
 
     private fun getOptions() = DefaultChatOptionsBuilder()
