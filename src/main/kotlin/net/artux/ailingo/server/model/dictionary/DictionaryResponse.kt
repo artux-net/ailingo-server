@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.model
+package net.artux.ailingo.server.model.dictionary
 
 data class DictionaryResponse(
     val word: String,

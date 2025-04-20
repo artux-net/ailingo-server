@@ -14,11 +14,9 @@ import org.springframework.web.bind.annotation.RestController
 class LeaderboardController(
     private val leaderboardService: LeaderboardService
 ) {
-
     @Operation(summary = "Получение списка пользователей, сортированного по страйку")
     @GetMapping
     fun getLeaderboard(): List<LeaderboardDto> {
         return leaderboardService.getLeaderboard()
     }
-
 }

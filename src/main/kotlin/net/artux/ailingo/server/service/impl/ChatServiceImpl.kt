@@ -2,10 +2,10 @@ package net.artux.ailingo.server.service.impl
 
 import jakarta.transaction.Transactional
 import net.artux.ailingo.server.entity.HistoryMessageEntity
-import net.artux.ailingo.server.entity.MessageType
 import net.artux.ailingo.server.entity.TopicEntity
 import net.artux.ailingo.server.model.ConversationDto
 import net.artux.ailingo.server.model.ConversationMessageDto
+import net.artux.ailingo.server.model.MessageType
 import net.artux.ailingo.server.model.PromptRequest
 import net.artux.ailingo.server.repository.MessageHistoryRepository
 import net.artux.ailingo.server.repository.TopicRepository
@@ -25,6 +25,7 @@ import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
+import kotlin.random.Random
 
 @Service
 @Transactional
@@ -38,7 +39,7 @@ class ChatServiceImpl(
     private val logger = LoggerFactory.getLogger(ChatServiceImpl::class.java)
 
     override fun startConversation(topicName: String): ConversationMessageDto {
-        val topic = topicRepository.findByName(topicName)
+        val topic: TopicEntity = topicRepository.findByName(topicName)
             .orElseThrow { InvalidRequestException("Topic $topicName not found") }
 
         val user = userService.getCurrentUser()
@@ -61,7 +62,7 @@ class ChatServiceImpl(
         }
 
         val conversationId = UUID.randomUUID()
-        val initialMessageContent = createMessage(topic, emptyList(), null)?.text
+        val initialMessageContent: String? = createMessage(topic, emptyList(), null)?.text
         if (initialMessageContent == null) {
             logger.error("Failed to generate initial welcome message for topic '{}'", topic.name)
             throw AiServiceException("Failed to generate Welcome Prompt.")
@@ -79,7 +80,12 @@ class ChatServiceImpl(
 
         val savedMessage = historyRepository.save(historyMessage)
         logger.info("Started conversation ${savedMessage.conversationId} for user ${user.login} on topic '${topic.name}'.")
-        return mapHistoryMessageEntityToConversationMessageDto(savedMessage)
+
+        val suggestions = generateSuggestions(topic, listOf(mapHistoryMessageToMessage(savedMessage)))
+        return mapHistoryMessageEntityToConversationMessageDto(savedMessage).apply {
+            this.suggestions = suggestions
+        }
+
     }
 
     override fun continueDialog(chatId: UUID, userInput: String): ConversationMessageDto {
@@ -87,7 +93,11 @@ class ChatServiceImpl(
         val messages = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
 
         if (messages.isEmpty()) {
-            logger.warn("Attempted to continue non-existent or unauthorized conversation {} for user {}", chatId, user.login)
+            logger.warn(
+                "Attempted to continue non-existent or unauthorized conversation {} for user {}",
+                chatId,
+                user.login
+            )
             throw InvalidRequestException("Conversation not found or access denied.")
         }
 
@@ -113,7 +123,6 @@ class ChatServiceImpl(
         val updatedMessages = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
         val promptMessages = updatedMessages.map { mapHistoryMessageToMessage(it) }
 
-
         val savedAiMessage: HistoryMessageEntity = if (updatedMessages.size < topic.messageLimit) {
             val aiResponse = createMessage(topic, promptMessages, userInput)
             historyRepository.save(
@@ -128,7 +137,13 @@ class ChatServiceImpl(
                 }
             )
         } else {
-            logger.info("Conversation {} for user {} reached message limit ({}) for topic '{}'. Ending conversation.", chatId, user.login, topic.messageLimit, topic.name)
+            logger.info(
+                "Conversation {} for user {} reached message limit ({}) for topic '{}'. Ending conversation.",
+                chatId,
+                user.login,
+                topic.messageLimit,
+                topic.name
+            )
             val systemMessageToStop = SystemMessage(STOP_CONVERSATION_PROMPT)
             val finalAiResponse = createMessage(topic, promptMessages + systemMessageToStop, userInput)
 
@@ -144,16 +159,35 @@ class ChatServiceImpl(
                 }
             )
 
+            val coinsToAdd = Random.nextInt(5, 11)
             try {
+                val coinResponse = userService.changeCoinsForCurrentUser(coinsToAdd)
+                if (coinResponse.success) {
+                    logger.info("Gave user {} {} coins for finishing conversation {}. New balance: {}", user.login, coinsToAdd, chatId, coinResponse.newBalance)
+                } else {
+                    logger.error("Failed to give {} coins to user {} for finishing conversation {}. Reason: {}", coinsToAdd, user.login, chatId, coinResponse.message)
+                }
+
                 userService.changeUserStreak()
                 logger.info("Updated streak for user {} after ending conversation {}", user.login, chatId)
             } catch (e: Exception) {
-                logger.error("Failed to update streak for user {} after ending conversation {}: {}", user.login, chatId, e.message, e)
+                logger.error(
+                    "Failed to update coins or streak for user {} after ending conversation {}: {}",
+                    user.login,
+                    chatId,
+                    e.message,
+                    e
+                )
             }
             finalHistoryMessage
         }
 
-        return mapHistoryMessageEntityToConversationMessageDto(savedAiMessage)
+        val updatedMessagesForSuggestion = historyRepository.findByConversationIdAndOwnerOrderByTimestamp(chatId, user)
+        val suggestions =
+            generateSuggestions(topic, updatedMessagesForSuggestion.map { mapHistoryMessageToMessage(it) })
+        return mapHistoryMessageEntityToConversationMessageDto(savedAiMessage).apply {
+            this.suggestions = suggestions
+        }
     }
 
 
@@ -171,7 +205,11 @@ class ChatServiceImpl(
         return historyRepository.findAllByOwner(userService.getCurrentUser())
     }
 
-    private fun createMessage(topic: TopicEntity, messages: List<Message>, userInput: String?): AssistantMessage? {
+    private fun createMessage(
+        topic: TopicEntity,
+        messages: List<Message>,
+        userInput: String? = null
+    ): AssistantMessage? {
         val chatClient = baseChatClient.mutate()
             .defaultSystem(topic.systemPrompt)
             .defaultOptions(getOptions())
@@ -228,13 +266,46 @@ class ChatServiceImpl(
         return request.call().content() ?: throw Exception("Can not get response from OpenAI")
     }
 
+    private fun generateSuggestions(topic: TopicEntity, conversationHistory: List<Message>): List<String> {
+        val chatClient = baseChatClient.mutate()
+            .defaultSystem("You are a helpful assistant that generates suggestions for user replies in a conversation. Provide only suggestions, do not answer as assistant.")
+            .defaultOptions(
+                DefaultChatOptionsBuilder()
+                    .maxTokens(50)
+                    .temperature(0.8)
+                    .build()
+            )
+            .build()
+
+        val suggestionPrompt = """
+            Generate 3 very short suggested replies for the user to continue the conversation.
+            Do not include any explanations or extra text.
+            Example suggestions can be questions or short phrases to continue the dialog based on the last message.
+            Last message was: ${conversationHistory.lastOrNull() ?: "Start of conversation"}
+            Topic of conversation: ${topic.name}
+            Suggestions:
+        """.trimIndent()
+
+        val promptToSend = Prompt(conversationHistory + listOf(SystemMessage(suggestionPrompt)))
+
+        return try {
+            val response = chatClient.prompt(promptToSend).call().content()
+            response?.lines()?.mapNotNull { it.removePrefix("- ").trim().takeIf { it.isNotEmpty() } } ?: emptyList()
+        } catch (e: Exception) {
+            logger.error("Error generating suggestions for topic '{}': {}", topic.name, e.message, e)
+            emptyList() // Return empty list in case of error
+        }
+    }
+
+
     private fun getOptions() = DefaultChatOptionsBuilder()
         .maxTokens(200)
         .temperature(0.7)
         .build()
 
     companion object {
-        const val STOP_CONVERSATION_PROMPT = "Politely inform the user that the conversation message limit for this topic has been reached and you must now conclude the discussion. Wish them well."
+        const val STOP_CONVERSATION_PROMPT =
+            "Politely inform the user that the conversation message limit for this topic has been reached and you must now conclude the discussion. Wish them well."
     }
 
     protected fun mapHistoryMessageEntityToConversationMessageDto(historyMessageEntity: HistoryMessageEntity): ConversationMessageDto {
@@ -244,6 +315,7 @@ class ChatServiceImpl(
             historyMessageEntity.content ?: "",
             historyMessageEntity.timestamp ?: Instant.now(),
             historyMessageEntity.type ?: MessageType.SYSTEM
-        )
+        ).apply {
+        }
     }
 }

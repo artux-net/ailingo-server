@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "topic_xp"
+      id: 20250326-1
+      changes:
+        - sqlFile:
+            path: topic_xp.sql
+            relativeToChangelogFile: true

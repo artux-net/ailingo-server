@@ -17,4 +17,5 @@ interface TopicService {
     fun deleteTopicByName(name: String)
 
     fun deleteTopicById(id: Long)
+    fun deleteAllTopic()
 }

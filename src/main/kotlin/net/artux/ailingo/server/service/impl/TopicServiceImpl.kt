@@ -4,26 +4,37 @@ import net.artux.ailingo.server.dto.CreateTopicDTO
 import net.artux.ailingo.server.dto.TopicResponseDTO
 import net.artux.ailingo.server.dto.UpdateTopicDTO
 import net.artux.ailingo.server.entity.TopicEntity
+import net.artux.ailingo.server.model.MessageType
+import net.artux.ailingo.server.repository.MessageHistoryRepository
 import net.artux.ailingo.server.repository.TopicRepository
 import net.artux.ailingo.server.service.TopicService
+import net.artux.ailingo.server.service.UserService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
 
 @Service
 class TopicServiceImpl(
-    val topicRepository: TopicRepository
+    val topicRepository: TopicRepository,
+    val userService: UserService,
+    val historyRepository: MessageHistoryRepository
 ) : TopicService {
     override fun getTopics(): List<TopicResponseDTO> {
-        return topicRepository.findAll().map {
+        val currentUser = userService.getCurrentUser()
+
+        return topicRepository.findAll().map { topicEntity ->
+            val isCompleted = historyRepository.existsByTopicAndOwnerAndType(topicEntity, currentUser, MessageType.FINAL)
+
             TopicResponseDTO(
-                id = it.id,
-                name = it.name,
-                imageUrl = it.image,
-                price = it.price,
-                welcomePrompt = it.welcomePrompt,
-                systemPrompt = it.systemPrompt,
-                messageLimit = it.messageLimit
+                id = topicEntity.id,
+                name = topicEntity.name,
+                imageUrl = topicEntity.image,
+                price = topicEntity.price,
+                welcomePrompt = topicEntity.welcomePrompt,
+                systemPrompt = topicEntity.systemPrompt,
+                messageLimit = topicEntity.messageLimit,
+                isCompleted = isCompleted,
+                topicXp = topicEntity.topicXp
             )
         }
     }
@@ -38,6 +49,7 @@ class TopicServiceImpl(
             welcomePrompt = createTopicDto.welcomePrompt
             systemPrompt = createTopicDto.systemPrompt
             messageLimit = createTopicDto.messageLimit
+            topicXp = createTopicDto.topicXp // Устанавливаем topicXp
         }
         return topicRepository.save(topic)
     }
@@ -53,6 +65,7 @@ class TopicServiceImpl(
                 welcomePrompt = dto.welcomePrompt
                 systemPrompt = dto.systemPrompt
                 messageLimit = dto.messageLimit
+                topicXp = dto.topicXp // Устанавливаем topicXp
             }
         }
         return topicRepository.saveAll(topics)
@@ -68,6 +81,7 @@ class TopicServiceImpl(
         updateTopicDto.welcomePrompt?.let { topic.welcomePrompt = it }
         updateTopicDto.systemPrompt?.let { topic.systemPrompt = it }
         updateTopicDto.messageLimit?.let { topic.messageLimit = it }
+        updateTopicDto.topicXp?.let { topic.topicXp = it } // Обновляем topicXp
 
         return topicRepository.save(topic)
     }
@@ -83,5 +97,10 @@ class TopicServiceImpl(
             throw IllegalArgumentException("Топик с id $id не найден")
         }
         topicRepository.deleteById(id)
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    override fun deleteAllTopic() {
+        topicRepository.deleteAll()
     }
 }

@@ -59,7 +59,7 @@ class UserServiceImpl(
         if (userRepository.count() == 0L) {
             val registerUserDto = RegisterUserDto("admin", "password", "test@test.net", "admin")
             val adminEntity = UserEntity(
-                null,
+                UUID.randomUUID(),
                 registerUserDto.login,
                 registerUserDto.email,
                 passwordEncoder.encode(registerUserDto.password),
@@ -73,7 +73,7 @@ class UserServiceImpl(
 
             val simpleUser = RegisterUserDto("user", "password", "user@user.net", "userName")
             val simpleUserEntity = UserEntity(
-                null,
+                UUID.randomUUID(),
                 simpleUser.login,
                 simpleUser.email,
                 passwordEncoder.encode(simpleUser.password),
@@ -181,25 +181,6 @@ class UserServiceImpl(
         return getDto(getCurrentUser())
     }
 
-    companion object {
-        fun getDto(userEntity: UserEntity): UserDto {
-            return UserDto(
-                userEntity.id,
-                userEntity.login ?: "",
-                userEntity.name ?: "",
-                userEntity.email ?: "",
-                userEntity.avatar,
-                userEntity.xp,
-                userEntity.coins,
-                userEntity.streak,
-                userEntity.registration,
-                userEntity.lastLoginAt,
-                userEntity.isEmailVerified,
-                userEntity.role,
-                userEntity.lastStreakAt
-            )
-        }
-    }
 
     override fun changeUserStreak() {
         val currentUser = getCurrentUser()
@@ -211,7 +192,7 @@ class UserServiceImpl(
 
         if (lastStreakDay == today) {
             logger.info("User ${currentUser.login} already had a streak activity today (${currentUser.lastStreakAt}). Streak remains ${currentUser.streak}.")
-            currentUser.lastSession = now
+            currentUser.lastLoginAt = now
             userRepository.save(currentUser)
             return
         }
@@ -234,12 +215,10 @@ class UserServiceImpl(
         }
         if (streakUpdated) {
             currentUser.lastStreakAt = now
-            currentUser.lastSession = now
             userRepository.save(currentUser)
-            logger.info("User ${currentUser.login} streak updated. LastStreakAt: ${currentUser.lastStreakAt}, LastSession: ${currentUser.lastSession}")
+            logger.info("User ${currentUser.login} streak updated. LastStreakAt: ${currentUser.lastStreakAt}")
         } else {
             logger.warn("User ${currentUser.login}: changeUserStreak called, but no condition met to update streak. lastStreakAt=${currentUser.lastStreakAt}, today=$today")
-            currentUser.lastSession = now
             userRepository.save(currentUser)
         }
     }
@@ -292,7 +271,7 @@ class UserServiceImpl(
                 throw InvalidRequestException("Неверный старый пароль.")
             }
             userValidator.validatePassword(updateUserProfile.newPassword)
-            currentUser.password = passwordEncoder.encode(updateUserProfile.newPassword)
+            currentUser.userPassword = passwordEncoder.encode(updateUserProfile.newPassword)
             isUpdated = true
         }
 
@@ -442,7 +421,7 @@ class UserServiceImpl(
         val lastStreakDay = user.lastStreakAt?.truncatedTo(ChronoUnit.DAYS)
 
         var needsSave = false
-        var streakWasValid: Boolean
+        val streakWasValid: Boolean
 
         if (user.streak > 0 && user.lastStreakAt != null) {
             if (lastStreakDay == today || lastStreakDay == yesterday) {
@@ -455,7 +434,7 @@ class UserServiceImpl(
                 streakWasValid = false
             }
         } else {
-            if (user.streak > 0 && user.lastStreakAt == null) {
+            if (user.streak > 0) {
                 logger.warn("User ${user.login} has streak ${user.streak} but null lastStreakAt. Resetting streak to 0.")
                 user.streak = 0
                 needsSave = true

@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      author: i.letuchiy
+      comment: "change name user password column"
+      id: 20250326-1
+      changes:
+        - sqlFile:
+            path: change_user_password_column.sql
+            relativeToChangelogFile: true
