@@ -33,4 +33,7 @@ public class TopicEntity {
 
     @Column(name = "message_limit")
     private Integer messageLimit;
+
+    @Column(name = "topic_xp")
+    private Integer topicXp;
 }

@@ -1,7 +1,7 @@
 package net.artux.ailingo.server.service
 
-import net.artux.ailingo.server.model.DictionaryResponse
+import net.artux.ailingo.server.model.CombinedDictionaryResponse
 
 interface DictionaryService {
-    fun getWordDefinition(word: String): List<DictionaryResponse>
+    fun getWordDefinition(word: String): CombinedDictionaryResponse
 }

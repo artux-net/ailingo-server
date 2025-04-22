@@ -68,3 +68,12 @@ jwt:
 translation:
   api:
     base-url: https://api.mymemory.translated.net
+
+yandex:
+  dictionary:
+    api:
+      key: dict.1.1.20231102T140345Z.9979700cf66f91d0.b210308b827953080f07e8f2e12779e2486d2695
+
+imgbb:
+  api-key: "f90248ad8f4b1e262a5e8e7603645cc1"
+  api-url: "https://api.imgbb.com/1/upload"

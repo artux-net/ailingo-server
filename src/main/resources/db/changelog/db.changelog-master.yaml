@@ -26,3 +26,9 @@ databaseChangeLog:
   - include:
       file: 2025/10-04/last_streak_at.sql
       relativeToChangelogFile: true
+  - include:
+      file: 2025/20-04/change_user_password_column.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 2025/21-04/topic_xp.sql
+      relativeToChangelogFile: true

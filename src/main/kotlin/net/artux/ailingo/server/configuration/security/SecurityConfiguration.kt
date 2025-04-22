@@ -50,6 +50,11 @@ class SecurityConfiguration(
 
     companion object {
         private val WHITE_LIST = arrayOf(
+            "/api/v1/upload/image",
+            "/api/v1/generate/text/*",
+            "/api/v1/generate/text/models",
+            "/api/v1/generate/image/*",
+            "/api/v1/generate/image/models",
             "/api/v1/user/login",
             "/api/v1/user/register",
             "/api/v1/user/verifyEmail",

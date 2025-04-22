@@ -91,6 +91,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 }
 
 detekt {

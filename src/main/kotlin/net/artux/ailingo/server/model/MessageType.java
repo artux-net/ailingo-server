@@ -1,4 +1,4 @@
-package net.artux.ailingo.server.entity;
+package net.artux.ailingo.server.model;
 
 public enum MessageType {
     USER,

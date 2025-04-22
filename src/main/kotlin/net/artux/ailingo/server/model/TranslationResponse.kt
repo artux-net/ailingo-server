@@ -1,6 +1,7 @@
 package net.artux.ailingo.server.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import net.artux.ailingo.server.model.dictionary.ResponseData
 
 data class TranslationResponse(
     @JsonProperty("responseData")

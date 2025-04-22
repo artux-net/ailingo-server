@@ -65,4 +65,11 @@ class TopicController(
         topicService.deleteTopicById(id)
         return ResponseEntity.status(HttpStatus.OK).body("Топик $id удален")
     }
+
+    @Operation(summary = "Удаление всех топиков")
+    @DeleteMapping("/deleteAllTopics")
+    fun deleteAllTopic(): ResponseEntity<String> {
+        topicService.deleteAllTopic()
+        return ResponseEntity.status(HttpStatus.OK).body("Топики удалены")
+    }
 }

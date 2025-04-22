@@ -1,0 +1,2 @@
+ALTER TABLE topic
+    ADD COLUMN topic_xp INTEGER;
