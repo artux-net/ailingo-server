@@ -39,5 +39,4 @@ jobs:
           cd dev
           docker compose pull
           docker compose down --remove-orphans
-          docker system prune -a -f
           docker compose --profile prod up -d
